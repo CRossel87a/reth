@@ -24,6 +24,16 @@ pub fn revm_spec_by_timestamp_after_merge(
 
 /// Map the latest active hardfork at the given block to a revm [`SpecId`](revm_primitives::SpecId).
 pub fn revm_spec(chain_spec: &ChainSpec, block: &Head) -> revm_primitives::SpecId {
+
+
+    if chain_spec.chain().id() == 369 && block.number <= 17_233_000 {
+
+        if block.timestamp >= 1681338455 {
+            return revm_primitives::SHANGHAI;
+        }
+    }
+
+
     if chain_spec.fork(EthereumHardfork::Prague).active_at_head(block) {
         revm_primitives::PRAGUE
     } else if chain_spec.fork(EthereumHardfork::Cancun).active_at_head(block) {

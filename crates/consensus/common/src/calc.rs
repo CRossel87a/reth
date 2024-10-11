@@ -27,7 +27,9 @@ pub fn base_block_reward(
     block_difficulty: U256,
     total_difficulty: U256,
 ) -> Option<u128> {
-    if chain_spec.fork(EthereumHardfork::Paris).active_at_ttd(total_difficulty, block_difficulty) {
+
+    if chain_spec.fork(EthereumHardfork::Paris).active_at_ttd(total_difficulty, block_difficulty) && !(chain_spec.chain_id() == 369 && block_number == 17_233_000)
+    {
         None
     } else {
         Some(base_block_reward_pre_merge(chain_spec, block_number))

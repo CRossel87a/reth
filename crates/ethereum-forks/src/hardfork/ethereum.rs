@@ -49,6 +49,7 @@ hardfork!(
         Cancun,
         /// Prague: <https://github.com/ethereum/execution-specs/blob/master/network-upgrades/mainnet-upgrades/prague.md>
         Prague,
+        PrimordialPulseBlock
     }
 );
 
@@ -356,6 +357,34 @@ impl EthereumHardfork {
             ),
             (Self::Shanghai, ForkCondition::Timestamp(1681338455)),
             (Self::Cancun, ForkCondition::Timestamp(1710338135)),
+        ]
+    }
+
+    pub const fn threesixnine() -> [(Self, ForkCondition); 17] {
+        [
+            (Self::Frontier, ForkCondition::Block(0)),
+            (Self::Homestead, ForkCondition::Block(1150000)),
+            (Self::Dao, ForkCondition::Block(1920000)),
+            (Self::Tangerine, ForkCondition::Block(2463000)),
+            (Self::SpuriousDragon, ForkCondition::Block(2675000)),
+            (Self::Byzantium, ForkCondition::Block(4370000)),
+            (Self::Constantinople, ForkCondition::Block(7280000)),
+            (Self::Petersburg, ForkCondition::Block(7280000)),
+            (Self::Istanbul, ForkCondition::Block(9069000)),
+            (Self::MuirGlacier, ForkCondition::Block(9200000)),
+            (Self::Berlin, ForkCondition::Block(12244000)),
+            (Self::London, ForkCondition::Block(12965000)),
+            (Self::ArrowGlacier, ForkCondition::Block(13773000)),
+            (Self::GrayGlacier, ForkCondition::Block(15050000)),
+            (Self::PrimordialPulseBlock, ForkCondition::Block(17_233_000)),
+            (
+                Self::Paris,
+                ForkCondition::TTD {
+                    fork_block: None,
+                    total_difficulty: uint!(58_750_000_000_000_000_000_000_U256),
+                },
+            ),
+            (Self::Shanghai, ForkCondition::Timestamp(1683786515)),
         ]
     }
 

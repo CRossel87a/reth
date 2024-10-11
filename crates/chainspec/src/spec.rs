@@ -54,6 +54,34 @@ pub static MAINNET: Lazy<Arc<ChainSpec>> = Lazy::new(|| {
     spec.into()
 });
 
+/// The Ethereum mainnet spec
+pub static THREESIXNINE: Lazy<Arc<ChainSpec>> = Lazy::new(|| {
+    let mut spec = ChainSpec {
+        chain: Chain::from_id_unchecked(369),
+        genesis: serde_json::from_str(include_str!("../res/genesis/mainnet.json"))
+            .expect("Can't deserialize Mainnet genesis json"),
+        genesis_hash: once_cell_set(MAINNET_GENESIS_HASH),
+        genesis_header: Default::default(),
+        // <https://etherscan.io/block/15537394>
+        paris_block_and_final_difficulty: Some((
+            15537394,
+            U256::from(58_750_003_716_598_352_947_541u128),
+        )),
+        hardforks: EthereumHardfork::threesixnine().into(),
+        // https://etherscan.io/tx/0xe75fb554e433e03763a1560646ee22dcb74e5274b34c5ad644e7c0f619a7e1d0
+        deposit_contract: Some(DepositContract::new(
+            address!("00000000219ab540356cbb839cbe05303d7705fa"),
+            11052984,
+            b256!("649bbc62d0e31342afea4e5cd82d4049e7e1ee912fc0889aa790803be39038c5"),
+        )),
+        base_fee_params: BaseFeeParamsKind::Constant(BaseFeeParams::ethereum()),
+        max_gas_limit: ETHEREUM_BLOCK_GAS_LIMIT,
+        prune_delete_limit: 20000,
+    };
+    spec.genesis.config.dao_fork_support = true;
+    spec.into()
+});
+
 /// The Sepolia spec
 pub static SEPOLIA: Lazy<Arc<ChainSpec>> = Lazy::new(|| {
     let mut spec = ChainSpec {
@@ -696,6 +724,10 @@ impl Hardforks for ChainSpec {
 
     fn fork_filter(&self, head: Head) -> ForkFilter {
         self.fork_filter(head)
+    }
+
+    fn chain_id(&self) -> u64 {
+        self.chain().id()
     }
 }
 
@@ -1439,6 +1471,79 @@ Post-merge hard forks (timestamp based):
             ],
         );
     }
+
+    #[test]
+    fn threesixnine_forkids() {
+        test_fork_ids(
+            &THREESIXNINE,
+            &[
+                (
+                    Head { number: 0, ..Default::default() },
+                    ForkId { hash: ForkHash([0xfc, 0x64, 0xec, 0x04]), next: 1150000 },
+                ),
+                (
+                    Head { number: 1150000, ..Default::default() },
+                    ForkId { hash: ForkHash([0x97, 0xc2, 0xc3, 0x4c]), next: 1920000 },
+                ),
+                (
+                    Head { number: 1920000, ..Default::default() },
+                    ForkId { hash: ForkHash([0x91, 0xd1, 0xf9, 0x48]), next: 2463000 },
+                ),
+                (
+                    Head { number: 2463000, ..Default::default() },
+                    ForkId { hash: ForkHash([0x7a, 0x64, 0xda, 0x13]), next: 2675000 },
+                ),
+                (
+                    Head { number: 2675000, ..Default::default() },
+                    ForkId { hash: ForkHash([0x3e, 0xdd, 0x5b, 0x10]), next: 4370000 },
+                ),
+                (
+                    Head { number: 4370000, ..Default::default() },
+                    ForkId { hash: ForkHash([0xa0, 0x0b, 0xc3, 0x24]), next: 7280000 },
+                ),
+                (
+                    Head { number: 7280000, ..Default::default() },
+                    ForkId { hash: ForkHash([0x66, 0x8d, 0xb0, 0xaf]), next: 9069000 },
+                ),
+                (
+                    Head { number: 9069000, ..Default::default() },
+                    ForkId { hash: ForkHash([0x87, 0x9d, 0x6e, 0x30]), next: 9200000 },
+                ),
+                (
+                    Head { number: 9200000, ..Default::default() },
+                    ForkId { hash: ForkHash([0xe0, 0x29, 0xe9, 0x91]), next: 12244000 },
+                ),
+                (
+                    Head { number: 12244000, ..Default::default() },
+                    ForkId { hash: ForkHash([0x0e, 0xb4, 0x40, 0xf6]), next: 12965000 },
+                ),
+                (
+                    Head { number: 12965000, ..Default::default() },
+                    ForkId { hash: ForkHash([0xb7, 0x15, 0x07, 0x7d]), next: 13773000 },
+                ),
+                (
+                    Head { number: 13773000, ..Default::default() },
+                    ForkId { hash: ForkHash([0x20, 0xc3, 0x27, 0xfc]), next: 15050000 },
+                ),
+                (
+                    Head { number: 15050000, ..Default::default() },
+                    ForkId { hash: ForkHash([0xf0, 0xaf, 0xd0, 0xe3]), next: 17_233_000 },
+                ),
+                ( // PrimordialPulseBlock
+                    Head { number: 17_233_000, ..Default::default() },
+                    ForkId { hash: ForkHash([0xec, 0x48, 0xdb, 0xcc]), next: 1683786515 },
+                ),
+                // First Shanghai block
+                (
+                    Head { number: 20000000, timestamp: 1683786515, ..Default::default() },
+                    ForkId { hash: ForkHash([0x62, 0xeb, 0xcf, 0xaf]), next: 0 },
+                ),
+                
+
+            ],
+        );
+    }
+
 
     #[test]
     fn holesky_fork_ids() {

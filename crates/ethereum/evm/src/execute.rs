@@ -6,7 +6,9 @@ use crate::{
 };
 use alloc::{boxed::Box, sync::Arc, vec, vec::Vec};
 use alloy_primitives::{BlockNumber, U256};
+use threesixnine::{three_six_nine_credits, three_six_nine_get_deposit_contract, three_six_nine_get_deposit_contract_storage, ETHEREUM_DEPOSIT_CONTRACT_ADDRESS, THREE_SIX_NINE_DEPOSIT_CONTRACT_ADDRESS};
 use core::fmt::Display;
+use std::collections::HashMap;
 use reth_chainspec::{ChainSpec, EthereumHardforks, MAINNET};
 use reth_ethereum_consensus::validate_block_post_execution;
 use reth_evm::{
@@ -22,13 +24,12 @@ use reth_primitives::{BlockWithSenders, EthereumHardfork, Header, Receipt, Reque
 use reth_prune_types::PruneModes;
 use reth_revm::{
     batch::BlockBatchRecord,
-    db::{states::bundle_state::BundleRetention, State},
+    db::{states::{bundle_state::BundleRetention, StorageSlot}, AccountStatus, State},
     state_change::post_block_balance_increments,
-    Evm,
+    Evm, TransitionAccount,
 };
 use revm_primitives::{
-    db::{Database, DatabaseCommit},
-    BlockEnv, CfgEnvWithHandlerCfg, EnvWithHandlerCfg, ResultAndState,
+    db::{Database, DatabaseCommit}, AccountInfo, BlockEnv, CfgEnvWithHandlerCfg, EnvWithHandlerCfg, ResultAndState
 };
 
 /// Provides executors to execute regular ethereum blocks
@@ -296,7 +297,16 @@ where
         self.on_new_block(&block.header);
 
         // 2. configure the evm and execute
-        let env = self.evm_env_for_block(&block.header, total_difficulty);
+        let mut env = self.evm_env_for_block(&block.header, total_difficulty);
+
+
+        if env.cfg.chain_id == 369 && block.number < 17_233_000 {
+            env.cfg.chain_id = 1;
+        } else if env.cfg.chain_id == 369 && block.number == 17_233_000 {
+            println!("17_233_000 total difficulty: {} difficulty: {}", total_difficulty, block.difficulty);
+        }
+
+
         let output = {
             let evm = self.executor.evm_config.evm_with_env(&mut self.state, env);
             self.executor.execute_state_transitions(block, evm, state_hook)
@@ -338,6 +348,48 @@ where
             // return balance to DAO beneficiary.
             *balance_increments.entry(DAO_HARDFORK_BENEFICIARY).or_default() += drained_balance;
         }
+
+        if self.chain_spec().fork(EthereumHardfork::PrimordialPulseBlock).transitions_at_block(block.number) {
+            println!("Applying sacrifice credits");
+        
+            let credits = three_six_nine_credits();
+
+            for (addr, credit) in credits.into_iter() {
+                *balance_increments.entry(addr).or_default() += credit;
+            }
+
+            if let Ok(Some(previous_info)) = self.state.basic(ETHEREUM_DEPOSIT_CONTRACT_ADDRESS) {
+                self.state.apply_transition(Vec::from([
+                    (ETHEREUM_DEPOSIT_CONTRACT_ADDRESS,TransitionAccount {
+                        info: None,
+                        status: AccountStatus::Destroyed,
+                        previous_info: Some(previous_info),
+                        previous_status: AccountStatus::Loaded,
+                        storage: HashMap::default(),
+                        storage_was_destroyed: true
+                    })
+                ]));
+            }
+
+            let new_deposit_contract: AccountInfo = three_six_nine_get_deposit_contract();
+            let storage = three_six_nine_get_deposit_contract_storage();
+  
+            println!("Adding new deposit contract");
+            self.state.apply_transition(Vec::from([
+                (
+                    THREE_SIX_NINE_DEPOSIT_CONTRACT_ADDRESS,
+                    TransitionAccount {
+                        status: AccountStatus::InMemoryChange,
+                        info: Some(new_deposit_contract),
+                        previous_status: AccountStatus::LoadedNotExisting,
+                        previous_info: None,
+                        storage: storage.iter().map(|(k, v) | (k.clone(),StorageSlot::new_changed(U256::ZERO,v.clone()))).collect(),
+                        storage_was_destroyed: false,
+                    },
+                )])
+            );
+        }
+
         // increment balances
         self.state
             .increment_balances(balance_increments)

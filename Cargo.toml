@@ -146,6 +146,7 @@ members = [
     "examples/txpool-tracing/",
     "testing/ef-tests/",
     "testing/testing-utils",
+    "crates/threesixnine/"
 ]
 default-members = ["bin/reth"]
 exclude = ["book/sources"]
@@ -405,6 +406,7 @@ reth-trie = { path = "crates/trie/trie" }
 reth-trie-common = { path = "crates/trie/common" }
 reth-trie-db = { path = "crates/trie/db" }
 reth-trie-parallel = { path = "crates/trie/parallel" }
+threesixnine = { path = "crates/threesixnine" }
 
 # revm
 revm = { version = "14.0.3", features = [

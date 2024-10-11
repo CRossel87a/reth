@@ -40,6 +40,8 @@ pub trait Hardforks: Clone {
 
     /// Creates a [`ForkFilter`] for the block described by [Head].
     fn fork_filter(&self, head: Head) -> ForkFilter;
+
+    fn chain_id(&self) -> u64;
 }
 
 /// Ordered list of a chain hardforks that implement [`Hardfork`].
