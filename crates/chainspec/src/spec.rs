@@ -70,7 +70,7 @@ pub static THREESIXNINE: Lazy<Arc<ChainSpec>> = Lazy::new(|| {
         hardforks: EthereumHardfork::threesixnine().into(),
         // https://etherscan.io/tx/0xe75fb554e433e03763a1560646ee22dcb74e5274b34c5ad644e7c0f619a7e1d0
         deposit_contract: Some(DepositContract::new(
-            address!("00000000219ab540356cbb839cbe05303d7705fa"),
+            address!("3693693693693693693693693693693693693693"),
             11052984,
             b256!("649bbc62d0e31342afea4e5cd82d4049e7e1ee912fc0889aa790803be39038c5"),
         )),

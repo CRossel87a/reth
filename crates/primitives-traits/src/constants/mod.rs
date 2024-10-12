@@ -98,7 +98,7 @@ pub const FINNEY_TO_WEI: u128 = (GWEI_TO_WEI as u128) * 1_000_000;
 pub const ETH_TO_WEI: u128 = FINNEY_TO_WEI * 1000;
 
 /// The Ethereum mainnet genesis hash:
-/// `0x0d4e56740f876aef8c010b86a40d5f56745a118d0906a34e69aec8c0db1cb8fa3`
+/// `0xd4e56740f876aef8c010b86a40d5f56745a118d0906a34e69aec8c0db1cb8fa3`
 pub const MAINNET_GENESIS_HASH: B256 =
     b256!("d4e56740f876aef8c010b86a40d5f56745a118d0906a34e69aec8c0db1cb8fa3");
 
