@@ -15,7 +15,7 @@ use std::{
 };
 use tokio::time::timeout;
 use tokio_stream::Stream;
-use tracing::{debug, trace};
+use tracing::{debug, info, trace};
 
 /// [`MAX_MESSAGE_SIZE`] is the maximum cap on the size of a protocol message.
 // https://github.com/ethereum/go-ethereum/blob/30602163d5d8321fbc68afdcbbaf2362b2641bde/eth/protocols/eth/protocol.go#L50
@@ -157,10 +157,13 @@ where
                     .into())
                 }
 
+                info!("my fork_id: {:?} peer fork_id: {:?}", fork_filter.current(), resp.forkid);
+
                 if let Err(err) =
                     fork_filter.validate(resp.forkid).map_err(EthHandshakeError::InvalidFork)
                 {
                     self.inner.disconnect(DisconnectReason::ProtocolBreach).await?;
+                    info!("my fork_id: {:?} peer fork_id: {:?} DisconnectReason::ProtocolBreach", fork_filter.current(), resp.forkid);
                     return Err(err.into())
                 }
 
