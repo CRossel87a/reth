@@ -376,7 +376,6 @@ impl EthereumHardfork {
             (Self::London, ForkCondition::Block(12965000)),
             (Self::ArrowGlacier, ForkCondition::Block(13773000)),
             (Self::GrayGlacier, ForkCondition::Block(15050000)),
-            (Self::PrimordialPulseBlock, ForkCondition::Block(17_233_000)),
             (
                 Self::Paris,
                 ForkCondition::TTD {
@@ -384,6 +383,7 @@ impl EthereumHardfork {
                     total_difficulty: uint!(58_750_000_000_000_000_000_000_U256),
                 },
             ),
+            (Self::PrimordialPulseBlock, ForkCondition::Block(17_233_000)),
             (Self::Shanghai, ForkCondition::Timestamp(1683786515)),
         ]
     }

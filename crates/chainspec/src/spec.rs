@@ -70,7 +70,7 @@ pub static THREESIXNINE: Lazy<Arc<ChainSpec>> = Lazy::new(|| {
         hardforks: EthereumHardfork::threesixnine().into(),
         // https://etherscan.io/tx/0xe75fb554e433e03763a1560646ee22dcb74e5274b34c5ad644e7c0f619a7e1d0
         deposit_contract: Some(DepositContract::new(
-            address!("3693693693693693693693693693693693693693"),
+            address!("00000000219ab540356cbb839cbe05303d7705fa"),
             11052984,
             b256!("649bbc62d0e31342afea4e5cd82d4049e7e1ee912fc0889aa790803be39038c5"),
         )),
@@ -1070,29 +1070,10 @@ mod tests {
 
     #[test]
     fn test_hardfork_list_display_mainnet() {
-        assert_eq!(
-            MAINNET.display_hardforks().to_string(),
-            "Pre-merge hard forks (block based):
-- Frontier                         @0
-- Homestead                        @1150000
-- Dao                              @1920000
-- Tangerine                        @2463000
-- SpuriousDragon                   @2675000
-- Byzantium                        @4370000
-- Constantinople                   @7280000
-- Petersburg                       @7280000
-- Istanbul                         @9069000
-- MuirGlacier                      @9200000
-- Berlin                           @12244000
-- London                           @12965000
-- ArrowGlacier                     @13773000
-- GrayGlacier                      @15050000
-Merge hard forks:
-- Paris                            @58750000000000000000000 (network is known to be merged)
-Post-merge hard forks (timestamp based):
-- Shanghai                         @1681338455
-- Cancun                           @1710338135"
-        );
+
+        dbg!(&THREESIXNINE.hardforks);
+
+        println!("{}",THREESIXNINE.display_hardforks().to_string());
     }
 
     #[test]

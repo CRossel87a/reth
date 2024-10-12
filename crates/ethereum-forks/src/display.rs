@@ -146,6 +146,8 @@ impl DisplayHardforks {
         let mut with_merge = Vec::new();
         let mut post_merge = Vec::new();
 
+        dbg!(&known_paris_block);
+
         for (fork, condition) in hardforks.forks_iter() {
             let mut display_fork =
                 DisplayFork { name: fork.name().to_string(), activated_at: condition, eip: None };
