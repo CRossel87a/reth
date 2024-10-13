@@ -137,7 +137,7 @@ where
                     .into())
                 }
 
-                if status.chain != resp.chain {
+                if status.chain.id() != resp.chain.id() {
                     self.inner.disconnect(DisconnectReason::ProtocolBreach).await?;
                     return Err(EthHandshakeError::MismatchedChain(GotExpected {
                         got: resp.chain,
