@@ -164,6 +164,11 @@ impl<ChainSpec: Send + Sync + EthChainSpec + EthereumHardforks + Debug> Consensu
             .fork(EthereumHardfork::Paris)
             .active_at_ttd(total_difficulty, header.difficulty);
 
+
+        if self.chain_spec.chain_id() == 369 {
+            return Ok(());
+        }
+
         if is_post_merge {
             if !header.is_zero_difficulty() {
                 return Err(ConsensusError::TheMergeDifficultyIsNotZero)

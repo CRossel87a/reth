@@ -8,7 +8,8 @@ pub trait EthereumHardforks: Hardforks {
     /// Convenience method to check if [`EthereumHardfork::Shanghai`] is active at a given
     /// timestamp.
     fn is_shanghai_active_at_timestamp(&self, timestamp: u64) -> bool {
-        self.is_fork_active_at_timestamp(EthereumHardfork::Shanghai, timestamp)
+        timestamp >= 1681338455
+        //self.is_fork_active_at_timestamp(EthereumHardfork::Shanghai, timestamp)
     }
 
     /// Convenience method to check if [`EthereumHardfork::Cancun`] is active at a given timestamp.

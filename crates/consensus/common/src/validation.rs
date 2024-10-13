@@ -47,8 +47,11 @@ pub fn validate_shanghai_withdrawals(block: &SealedBlock) -> Result<(), Consensu
     let withdrawals =
         block.body.withdrawals.as_ref().ok_or(ConsensusError::BodyWithdrawalsMissing)?;
     let withdrawals_root = reth_primitives::proofs::calculate_withdrawals_root(withdrawals);
+
     let header_withdrawals_root =
         block.withdrawals_root.as_ref().ok_or(ConsensusError::WithdrawalsRootMissing)?;
+
+
     if withdrawals_root != *header_withdrawals_root {
         return Err(ConsensusError::BodyWithdrawalsRootDiff(
             GotExpected { got: withdrawals_root, expected: *header_withdrawals_root }.into(),
@@ -120,7 +123,11 @@ pub fn validate_block_pre_execution<ChainSpec: EthereumHardforks>(
 
     // EIP-4895: Beacon chain push withdrawals as operations
     if chain_spec.is_shanghai_active_at_timestamp(block.timestamp) {
-        validate_shanghai_withdrawals(block)?;
+
+        if chain_spec.chain_id() != 369 || (chain_spec.chain_id() == 369 && block.timestamp >= 1683786515) {
+            validate_shanghai_withdrawals(block)?;
+        }
+
     }
 
     if chain_spec.is_cancun_active_at_timestamp(block.timestamp) {
