@@ -253,7 +253,7 @@ impl<DB> NodeState<DB> {
                             "Received forkchoice updated message when syncing"
                         }
                     };
-                    info!(?head_block_hash, ?safe_block_hash, ?finalized_block_hash, "{}", msg);
+                    //info!(?head_block_hash, ?safe_block_hash, ?finalized_block_hash, "{}", msg);
                 }
                 self.head_block_hash = Some(head_block_hash);
                 self.safe_block_hash = Some(safe_block_hash);

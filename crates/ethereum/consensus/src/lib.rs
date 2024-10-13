@@ -32,14 +32,21 @@ pub struct EthBeaconConsensus {
 
 impl EthBeaconConsensus {
     /// Create a new instance of [`EthBeaconConsensus`]
-    pub fn new(chain_spec: Arc<ChainSpec>) -> Self {
+    pub const fn new(chain_spec: Arc<ChainSpec>) -> Self {
         Self { chain_spec }
     }
 }
 
 impl Consensus for EthBeaconConsensus {
     fn validate_header(&self, header: &SealedHeader) -> Result<(), ConsensusError> {
-        validate_header_standalone(header, &self.chain_spec)?;
+
+        let res = validate_header_standalone(header, &self.chain_spec);
+
+        if let Err(ref err) = res {
+            println!("validate_header err on {}: {}", header.number,err);
+        }
+
+        res?;
         Ok(())
     }
 
@@ -48,7 +55,13 @@ impl Consensus for EthBeaconConsensus {
         header: &SealedHeader,
         parent: &SealedHeader,
     ) -> Result<(), ConsensusError> {
-        header.validate_against_parent(parent, &self.chain_spec).map_err(ConsensusError::from)?;
+        let res = header.validate_against_parent(parent, &self.chain_spec).map_err(ConsensusError::from);
+
+        if let Err(ref err) = res {
+            println!("validate_header_against_parent() err on {}: {}", header.number,err);
+        }
+
+        res?;
         Ok(())
     }
 
@@ -62,7 +75,13 @@ impl Consensus for EthBeaconConsensus {
             .fork(Hardfork::Paris)
             .active_at_ttd(total_difficulty, header.difficulty);
 
+
+        if self.chain_spec.chain().id() == 369 {
+            return Ok(());
+        }
+
         if is_post_merge {
+            
             if !header.is_zero_difficulty() {
                 return Err(ConsensusError::TheMergeDifficultyIsNotZero)
             }
@@ -71,7 +90,7 @@ impl Consensus for EthBeaconConsensus {
                 return Err(ConsensusError::TheMergeNonceIsNotZero)
             }
 
-            if header.ommers_hash != EMPTY_OMMER_ROOT_HASH {
+            if header.ommers_hash != EMPTY_OMMER_ROOT_HASH  {
                 return Err(ConsensusError::TheMergeOmmerRootIsNotEmpty)
             }
 

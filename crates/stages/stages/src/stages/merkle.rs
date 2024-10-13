@@ -120,7 +120,7 @@ impl MerkleStage {
     ) -> Result<(), StageError> {
         let mut buf = vec![];
         if let Some(checkpoint) = checkpoint {
-            debug!(
+            info!(
                 target: "sync::stages::merkle::exec",
                 last_account_key = ?checkpoint.last_account_key,
                 "Saving inner merkle checkpoint"
@@ -165,6 +165,7 @@ impl<DB: Database> Stage<DB> for MerkleStage {
         let target_block = provider
             .header_by_number(to_block)?
             .ok_or_else(|| ProviderError::HeaderNotFound(to_block.into()))?;
+
         let target_block_root = target_block.state_root;
 
         let mut checkpoint = self.get_execution_checkpoint(provider)?;
@@ -175,7 +176,7 @@ impl<DB: Database> Stage<DB> for MerkleStage {
             let mut entities_checkpoint = if let Some(checkpoint) =
                 checkpoint.as_ref().filter(|c| c.target_block == to_block)
             {
-                debug!(
+                info!(
                     target: "sync::stages::merkle::exec",
                     current = ?current_block_number,
                     target = ?to_block,
@@ -185,7 +186,7 @@ impl<DB: Database> Stage<DB> for MerkleStage {
 
                 input.checkpoint().entities_stage_checkpoint()
             } else {
-                debug!(
+                info!(
                     target: "sync::stages::merkle::exec",
                     current = ?current_block_number,
                     target = ?to_block,
@@ -208,13 +209,22 @@ impl<DB: Database> Stage<DB> for MerkleStage {
             });
 
             let tx = provider.tx_ref();
-            let progress = StateRoot::from_tx(tx)
+            let progress_result = StateRoot::from_tx(tx)
                 .with_intermediate_state(checkpoint.map(IntermediateStateRootState::from))
                 .root_with_progress()
                 .map_err(|e| {
                     error!(target: "sync::stages::merkle", %e, ?current_block_number, ?to_block, "State root with progress failed! {INVALID_STATE_ROOT_ERROR_MESSAGE}");
                     StageError::Fatal(Box::new(e))
-                })?;
+                });
+
+            if let Err(err) = &progress_result {
+                println!("Stage error: {}", err);
+                std::process::exit(1);
+            }
+
+            let progress = progress_result?;
+
+
             match progress {
                 StateRootProgress::Progress(state, hashed_entries_walked, updates) => {
                     updates.flush(tx)?;
@@ -245,13 +255,22 @@ impl<DB: Database> Stage<DB> for MerkleStage {
                 }
             }
         } else {
-            debug!(target: "sync::stages::merkle::exec", current = ?current_block_number, target = ?to_block, "Updating trie");
-            let (root, updates) =
+            info!(target: "sync::stages::merkle::exec", current = ?current_block_number, target = ?to_block, "Updating trie");
+
+            let incremental_result =
                 StateRoot::incremental_root_with_updates(provider.tx_ref(), range)
                     .map_err(|e| {
                         error!(target: "sync::stages::merkle", %e, ?current_block_number, ?to_block, "Incremental state root failed! {INVALID_STATE_ROOT_ERROR_MESSAGE}");
                         StageError::Fatal(Box::new(e))
-                    })?;
+                    });
+
+            
+            if let Err(err) = &incremental_result {
+                println!("incremental_root_with_updates() err: {}", err);
+            }
+
+            let (root, updates) = incremental_result?;
+
             updates.flush(provider.tx_ref())?;
 
             let total_hashed_entries = (provider.count_entries::<tables::HashedAccounts>()? +

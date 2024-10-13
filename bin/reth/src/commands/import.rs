@@ -182,6 +182,8 @@ where
     let mut header_downloader = ReverseHeadersDownloaderBuilder::new(config.stages.headers)
         .build(file_client.clone(), consensus.clone())
         .into_task();
+
+    println!("header_downloader init");
     // TODO: The pipeline should correctly configure the downloader on its own.
     // Find the possibility to remove unnecessary pre-configuration.
     header_downloader.update_local_head(local_head);

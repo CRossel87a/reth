@@ -47,11 +47,7 @@ serde_json.workspace = true
 
 test-fuzz.workspace = true
 
-pprof = { workspace = true, features = [
-    "flamegraph",
-    "frame-pointer",
-    "criterion",
-] }
+
 criterion.workspace = true
 iai-callgrind = "0.10.2"
 

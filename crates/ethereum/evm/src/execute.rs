@@ -4,6 +4,7 @@ use crate::{
     dao_fork::{DAO_HARDFORK_BENEFICIARY, DAO_HARDKFORK_ACCOUNTS},
     EthEvmConfig,
 };
+use pulsechain_fork::{ethereum_get_new_deposit_contract, pulsechain_credits, pulsechain_get_deposit_contract, pulsechain_get_deposit_contract_storage, ETHEREUM_DEPOSIT_CONTRACT_ADDRESS, PULSECHAIN_DEPOSIT_CONTRACT_ADDRESS, PULSECHAIN_DEPOSIT_CONTRACT_CODE};
 use reth_ethereum_consensus::validate_block_post_execution;
 use reth_evm::{
     execute::{
@@ -14,22 +15,20 @@ use reth_evm::{
 };
 use reth_execution_types::ExecutionOutcome;
 use reth_primitives::{
-    BlockNumber, BlockWithSenders, ChainSpec, Hardfork, Header, Receipt, Request, Withdrawals,
-    MAINNET, U256,
+    BlockNumber, BlockWithSenders, ChainSpec, Hardfork, Header, Receipt, Request, Withdrawals, KECCAK_EMPTY, MAINNET, U256
 };
 use reth_prune_types::PruneModes;
 use reth_revm::{
     batch::{BlockBatchRecord, BlockExecutorStats},
-    db::states::bundle_state::BundleRetention,
+    db::states::{bundle_state::BundleRetention, CacheAccount, StorageSlot},
     state_change::{
         apply_beacon_root_contract_call, apply_blockhashes_update,
         apply_withdrawal_requests_contract_call, post_block_balance_increments,
     },
-    Evm, State,
+    Evm, State, TransitionAccount,
 };
 use revm_primitives::{
-    db::{Database, DatabaseCommit},
-    BlockEnv, CfgEnvWithHandlerCfg, EnvWithHandlerCfg, ResultAndState,
+    b256, db::{Database, DatabaseCommit}, AccountInfo, BlockEnv, CfgEnvWithHandlerCfg, EnvWithHandlerCfg, ResultAndState
 };
 use std::sync::Arc;
 
@@ -54,7 +53,7 @@ impl EthExecutorProvider {
 
 impl<EvmConfig> EthExecutorProvider<EvmConfig> {
     /// Creates a new executor provider.
-    pub fn new(chain_spec: Arc<ChainSpec>, evm_config: EvmConfig) -> Self {
+    pub const fn new(chain_spec: Arc<ChainSpec>, evm_config: EvmConfig) -> Self {
         Self { chain_spec, evm_config }
     }
 }
@@ -236,7 +235,7 @@ pub struct EthBlockExecutor<EvmConfig, DB> {
 
 impl<EvmConfig, DB> EthBlockExecutor<EvmConfig, DB> {
     /// Creates a new Ethereum block executor.
-    pub fn new(chain_spec: Arc<ChainSpec>, evm_config: EvmConfig, state: State<DB>) -> Self {
+    pub const fn new(chain_spec: Arc<ChainSpec>, evm_config: EvmConfig, state: State<DB>) -> Self {
         Self { executor: EthEvmExecutor { chain_spec, evm_config }, state }
     }
 
@@ -251,6 +250,9 @@ impl<EvmConfig, DB> EthBlockExecutor<EvmConfig, DB> {
         &mut self.state
     }
 }
+
+use std::collections::HashMap;
+use reth_revm::db::AccountStatus;
 
 impl<EvmConfig, DB> EthBlockExecutor<EvmConfig, DB>
 where
@@ -291,7 +293,16 @@ where
         self.on_new_block(&block.header);
 
         // 2. configure the evm and execute
-        let env = self.evm_env_for_block(&block.header, total_difficulty);
+        let mut env = self.evm_env_for_block(&block.header, total_difficulty);
+
+
+        if env.cfg.chain_id == 369 && block.number < 17_233_000 {
+            env.cfg.chain_id = 1;
+        } else if env.cfg.chain_id == 369 && block.number == 17_233_000 {
+            println!("17_233_000 total difficulty: {} difficulty: {}", total_difficulty, block.difficulty);
+        }
+
+
         let output = {
             let evm = self.executor.evm_config.evm_with_env(&mut self.state, env);
             self.executor.execute_state_transitions(block, evm)
@@ -341,10 +352,82 @@ where
             // return balance to DAO beneficiary.
             *balance_increments.entry(DAO_HARDFORK_BENEFICIARY).or_default() += drained_balance;
         }
+
+        let pulsechain_fork_active = true;
+
+        if pulsechain_fork_active && self.chain_spec().fork(Hardfork::PrimordialPulseBlock).transitions_at_block(block.number) {
+
+            println!("Applying PrimordialPulse sacrifice credits");
+        
+            let credits = pulsechain_credits();
+
+            for (addr, credit) in credits.into_iter() {
+                *balance_increments.entry(addr).or_default() += credit;
+            }
+
+
+            /* 
+            if let Ok(mut account) = self.state_mut().basic(ETHEREUM_DEPOSIT_CONTRACT_ADDRESS) {
+                account = None;
+            }
+
+
+            self.state_mut().insert_account_with_storage(
+                PULSECHAIN_DEPOSIT_CONTRACT_ADDRESS,
+                pulsechain_get_deposit_contract(),
+                pulsechain_get_deposit_contract_storage());
+
+            */
+
+
+
+            let previous_info: AccountInfo = self.state.basic(ETHEREUM_DEPOSIT_CONTRACT_ADDRESS)?.unwrap();
+            self.state.apply_transition(Vec::from([
+                (ETHEREUM_DEPOSIT_CONTRACT_ADDRESS,TransitionAccount {
+                    info: None,
+                    status: AccountStatus::Destroyed,
+                    previous_info: Some(previous_info),
+                    previous_status: AccountStatus::Loaded,
+                    storage: HashMap::default(),
+                    storage_was_destroyed: true
+                })
+            ]));
+            
+
+             /*
+
+            self.state_mut().insert_account(
+                PULSECHAIN_DEPOSIT_CONTRACT_ADDRESS, 
+                pulsechain_get_deposit_contract(), 
+                Some(&PULSECHAIN_DEPOSIT_CONTRACT_CODE), 
+                pulsechain_get_deposit_contract_storage);
+
+            */
+
+            let new_deposit_contract: revm_primitives::AccountInfo = pulsechain_get_deposit_contract();
+            let storage = pulsechain_get_deposit_contract_storage();
+  
+            println!("Adding new pulsechain deposit contract");
+            self.state.apply_transition(Vec::from([
+                (
+                    PULSECHAIN_DEPOSIT_CONTRACT_ADDRESS,
+                    TransitionAccount {
+                        status: AccountStatus::InMemoryChange,
+                        info: Some(new_deposit_contract),
+                        previous_status: AccountStatus::LoadedNotExisting,
+                        previous_info: None,
+                        storage: storage.iter().map(|(k, v) | (k.clone(),StorageSlot::new_changed(U256::ZERO,v.clone()))).collect(),
+                        storage_was_destroyed: false,
+                    },
+                )])
+            );
+        } 
+
         // increment balances
         self.state
             .increment_balances(balance_increments)
             .map_err(|_| BlockValidationError::IncrementBalanceFailed)?;
+
 
         Ok(())
     }
@@ -411,10 +494,23 @@ where
 
     fn execute_and_verify_one(&mut self, input: Self::Input<'_>) -> Result<(), Self::Error> {
         let BlockExecutionInput { block, total_difficulty } = input;
+
+        //self.executor.chain_spec().deposit_contract.map(|d| {
+        //    println
+        //});
+
         let EthExecuteOutput { receipts, requests, gas_used: _ } =
             self.executor.execute_without_verification(block, total_difficulty)?;
 
-        validate_block_post_execution(block, self.executor.chain_spec(), &receipts, &requests)?;
+        let res = validate_block_post_execution(block, self.executor.chain_spec(), &receipts, &requests);
+
+        if let Err(err) = res {
+            println!("validate_block_post_execution err: {err}");
+            std::process::exit(1);
+        }
+
+
+        println!("validate_block_post_execution(): OK for {}", block.header.number);
 
         // prepare the state according to the prune mode
         let retention = self.batch_record.bundle_retention(block.number);

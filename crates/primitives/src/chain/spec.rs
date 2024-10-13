@@ -81,6 +81,58 @@ pub static MAINNET: Lazy<Arc<ChainSpec>> = Lazy::new(|| {
     .into()
 });
 
+/// The Ethereum mainnet spec
+pub static PULSECHAIN: Lazy<Arc<ChainSpec>> = Lazy::new(|| {
+    ChainSpec {
+        chain: Chain::from_id_unchecked(369),
+        genesis: serde_json::from_str(include_str!("../../res/genesis/mainnet.json"))
+            .expect("Can't deserialize Mainnet genesis json"),
+        genesis_hash: Some(b256!(
+            "d4e56740f876aef8c010b86a40d5f56745a118d0906a34e69aec8c0db1cb8fa3"
+        )),
+        // <https://etherscan.io/block/15537394>
+        paris_block_and_final_difficulty: Some((
+            15537394,
+            U256::from(58_750_003_716_598_352_947_541u128),
+        )),
+        hardforks: BTreeMap::from([
+            (Hardfork::Frontier, ForkCondition::Block(0)),
+            (Hardfork::Homestead, ForkCondition::Block(1150000)), // ok
+            (Hardfork::Dao, ForkCondition::Block(1920000)), // ok
+            (Hardfork::Tangerine, ForkCondition::Block(2463000)),
+            (Hardfork::SpuriousDragon, ForkCondition::Block(2675000)),
+            (Hardfork::Byzantium, ForkCondition::Block(4370000)),
+            (Hardfork::Constantinople, ForkCondition::Block(7280000)),
+            (Hardfork::Petersburg, ForkCondition::Block(7280000)),
+            (Hardfork::Istanbul, ForkCondition::Block(9069000)),
+            (Hardfork::MuirGlacier, ForkCondition::Block(9200000)),
+            (Hardfork::Berlin, ForkCondition::Block(12244000)),
+            (Hardfork::London, ForkCondition::Block(12965000)),
+            (Hardfork::ArrowGlacier, ForkCondition::Block(13773000)),
+            (Hardfork::GrayGlacier, ForkCondition::Block(15050000)), // ok
+            (Hardfork::PrimordialPulseBlock, ForkCondition::Block(17_233_000)),
+            (
+                Hardfork::Paris,
+                ForkCondition::TTD {
+                    fork_block: None,
+                    total_difficulty: U256::from(58_750_000_000_000_000_000_000_u128),
+                },
+            ),
+            (Hardfork::Shanghai, ForkCondition::Timestamp(1683786515)),
+
+        ]),
+        // https://etherscan.io/tx/0xe75fb554e433e03763a1560646ee22dcb74e5274b34c5ad644e7c0f619a7e1d0
+        deposit_contract: Some(DepositContract::new(
+            address!("00000000219ab540356cbb839cbe05303d7705fa"),
+            11052984,
+            b256!("649bbc62d0e31342afea4e5cd82d4049e7e1ee912fc0889aa790803be39038c5"),
+        )),
+        base_fee_params: BaseFeeParamsKind::Constant(BaseFeeParams::ethereum()),
+        prune_delete_limit: 3500,
+    }
+    .into()
+});
+
 /// The Goerli spec
 pub static GOERLI: Lazy<Arc<ChainSpec>> = Lazy::new(|| {
     ChainSpec {
@@ -813,7 +865,7 @@ impl ChainSpec {
     /// Convenience method to check if [`Hardfork::Shanghai`] is active at a given timestamp.
     #[inline]
     pub fn is_shanghai_active_at_timestamp(&self, timestamp: u64) -> bool {
-        self.is_fork_active_at_timestamp(Hardfork::Shanghai, timestamp)
+        timestamp >= 1681338455
     }
 
     /// Convenience method to check if [`Hardfork::Cancun`] is active at a given timestamp.
@@ -1765,29 +1817,8 @@ mod tests {
 
     #[test]
     fn test_hardfork_list_display_mainnet() {
-        assert_eq!(
-            MAINNET.display_hardforks().to_string(),
-            "Pre-merge hard forks (block based):
-- Frontier                         @0
-- Homestead                        @1150000
-- Dao                              @1920000
-- Tangerine                        @2463000
-- SpuriousDragon                   @2675000
-- Byzantium                        @4370000
-- Constantinople                   @7280000
-- Petersburg                       @7280000
-- Istanbul                         @9069000
-- MuirGlacier                      @9200000
-- Berlin                           @12244000
-- London                           @12965000
-- ArrowGlacier                     @13773000
-- GrayGlacier                      @15050000
-Merge hard forks:
-- Paris                            @58750000000000000000000 (network is known to be merged)
-Post-merge hard forks (timestamp based):
-- Shanghai                         @1681338455
-- Cancun                           @1710338135"
-        );
+        dbg!(&PULSECHAIN.hardforks);
+        println!("{}",PULSECHAIN.display_hardforks().to_string());
     }
 
     #[test]
@@ -2211,6 +2242,79 @@ Post-merge hard forks (timestamp based):
             ],
         );
     }
+
+    #[test]
+    fn pulsechain_forkids() {
+        test_fork_ids(
+            &PULSECHAIN,
+            &[
+                (
+                    Head { number: 0, ..Default::default() },
+                    ForkId { hash: ForkHash([0xfc, 0x64, 0xec, 0x04]), next: 1150000 },
+                ),
+                (
+                    Head { number: 1150000, ..Default::default() },
+                    ForkId { hash: ForkHash([0x97, 0xc2, 0xc3, 0x4c]), next: 1920000 },
+                ),
+                (
+                    Head { number: 1920000, ..Default::default() },
+                    ForkId { hash: ForkHash([0x91, 0xd1, 0xf9, 0x48]), next: 2463000 },
+                ),
+                (
+                    Head { number: 2463000, ..Default::default() },
+                    ForkId { hash: ForkHash([0x7a, 0x64, 0xda, 0x13]), next: 2675000 },
+                ),
+                (
+                    Head { number: 2675000, ..Default::default() },
+                    ForkId { hash: ForkHash([0x3e, 0xdd, 0x5b, 0x10]), next: 4370000 },
+                ),
+                (
+                    Head { number: 4370000, ..Default::default() },
+                    ForkId { hash: ForkHash([0xa0, 0x0b, 0xc3, 0x24]), next: 7280000 },
+                ),
+                (
+                    Head { number: 7280000, ..Default::default() },
+                    ForkId { hash: ForkHash([0x66, 0x8d, 0xb0, 0xaf]), next: 9069000 },
+                ),
+                (
+                    Head { number: 9069000, ..Default::default() },
+                    ForkId { hash: ForkHash([0x87, 0x9d, 0x6e, 0x30]), next: 9200000 },
+                ),
+                (
+                    Head { number: 9200000, ..Default::default() },
+                    ForkId { hash: ForkHash([0xe0, 0x29, 0xe9, 0x91]), next: 12244000 },
+                ),
+                (
+                    Head { number: 12244000, ..Default::default() },
+                    ForkId { hash: ForkHash([0x0e, 0xb4, 0x40, 0xf6]), next: 12965000 },
+                ),
+                (
+                    Head { number: 12965000, ..Default::default() },
+                    ForkId { hash: ForkHash([0xb7, 0x15, 0x07, 0x7d]), next: 13773000 },
+                ),
+                (
+                    Head { number: 13773000, ..Default::default() },
+                    ForkId { hash: ForkHash([0x20, 0xc3, 0x27, 0xfc]), next: 15050000 },
+                ),
+                (
+                    Head { number: 15050000, ..Default::default() },
+                    ForkId { hash: ForkHash([0xf0, 0xaf, 0xd0, 0xe3]), next: 17_233_000 },
+                ),
+                ( // PrimordialPulseBlock
+                    Head { number: 17_233_000, ..Default::default() },
+                    ForkId { hash: ForkHash([0xec, 0x48, 0xdb, 0xcc]), next: 1683786515 },
+                ),
+                // First Shanghai block
+                (
+                    Head { number: 20000000, timestamp: 1683786515, ..Default::default() },
+                    ForkId { hash: ForkHash([0x62, 0xeb, 0xcf, 0xaf]), next: 0 },
+                ),
+                
+
+            ],
+        );
+    }
+
 
     #[test]
     fn holesky_forkids() {

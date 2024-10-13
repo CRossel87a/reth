@@ -16,7 +16,7 @@ use reth_primitives::DEV;
 use reth_primitives::{BASE_MAINNET, BASE_SEPOLIA, OP_MAINNET, OP_SEPOLIA};
 
 #[cfg(not(feature = "optimism"))]
-use reth_primitives::{GOERLI, HOLESKY, MAINNET, SEPOLIA};
+use reth_primitives::{GOERLI, HOLESKY, MAINNET, SEPOLIA, PULSECHAIN};
 
 #[cfg(feature = "optimism")]
 /// Chains supported by op-reth. First value should be used as the default.
@@ -43,6 +43,7 @@ pub fn chain_spec_value_parser(s: &str) -> eyre::Result<Arc<ChainSpec>, eyre::Er
         "sepolia" => SEPOLIA.clone(),
         #[cfg(not(feature = "optimism"))]
         "holesky" => HOLESKY.clone(),
+        "pulsechain" => PULSECHAIN.clone(),
         #[cfg(not(feature = "optimism"))]
         "dev" => DEV.clone(),
         #[cfg(feature = "optimism")]
@@ -76,6 +77,7 @@ pub fn genesis_value_parser(s: &str) -> eyre::Result<Arc<ChainSpec>, eyre::Error
         "mainnet" => MAINNET.clone(),
         #[cfg(not(feature = "optimism"))]
         "goerli" => GOERLI.clone(),
+        "pulsechain" => PULSECHAIN.clone(),
         #[cfg(not(feature = "optimism"))]
         "sepolia" => SEPOLIA.clone(),
         #[cfg(not(feature = "optimism"))]

@@ -20,6 +20,7 @@ reth-consensus-common.workspace = true
 reth-prune-types.workspace = true
 reth-storage-api.workspace = true
 reth-trie = { workspace = true, optional = true }
+pulsechain_fork.workspace = true
 
 # revm
 revm.workspace = true

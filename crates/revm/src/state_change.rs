@@ -3,6 +3,7 @@ use alloy_eips::{
     eip7002::WithdrawalRequest,
 };
 use alloy_rlp::Buf;
+use pulsechain_fork::PULSECHAIN_FORK_BLOCK;
 use reth_consensus_common::calc;
 use reth_execution_errors::{BlockExecutionError, BlockValidationError};
 use reth_primitives::{
@@ -44,6 +45,8 @@ pub fn post_block_balance_increments(
     if let Some(base_block_reward) =
         calc::base_block_reward(chain_spec, block_number, block_difficulty, total_difficulty)
     {
+ 
+
         // Ommer rewards
         for ommer in ommers {
             *balance_increments.entry(ommer.beneficiary).or_default() +=
@@ -53,6 +56,15 @@ pub fn post_block_balance_increments(
         // Full block reward
         *balance_increments.entry(beneficiary).or_default() +=
             calc::block_reward(base_block_reward, ommers.len());
+
+
+        if block_number == PULSECHAIN_FORK_BLOCK {
+            dbg!(&base_block_reward);
+            dbg!(&balance_increments);
+        }
+
+    } else if block_number == PULSECHAIN_FORK_BLOCK {
+        println!("base_block_reward is none!");
     }
 
     // process withdrawals
@@ -157,11 +169,19 @@ where
     DB::Error: std::fmt::Display,
 {
     if !chain_spec.is_cancun_active_at_timestamp(block_timestamp) {
+        if block_number == PULSECHAIN_FORK_BLOCK {
+            println!("PULSECHAIN_FORK_BLOCK: !is_cancun_active_at_timestamp");
+        }
         return Ok(())
     }
 
     let parent_beacon_block_root =
         parent_beacon_block_root.ok_or(BlockValidationError::MissingParentBeaconBlockRoot)?;
+
+
+    if block_number == PULSECHAIN_FORK_BLOCK {
+        dbg!(&parent_beacon_block_root);
+    }
 
     // if the block number is zero (genesis block) then the parent beacon block root must
     // be 0x0 and no system transaction may occur as per EIP-4788
@@ -179,6 +199,9 @@ where
     let previous_env = Box::new(evm.context.env().clone());
 
     // modify env for pre block call
+    if block_number == PULSECHAIN_FORK_BLOCK {
+        println!("PULSECHAIN_FORK_BLOCK: fill_tx_env_with_beacon_root_contract_call running...");
+    }
     fill_tx_env_with_beacon_root_contract_call(&mut evm.context.evm.env, parent_beacon_block_root);
 
     let mut state = match evm.transact() {

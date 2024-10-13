@@ -7,7 +7,7 @@ use reth_db_api::{
     transaction::{DbTx, DbTxMut},
 };
 use reth_etl::Collector;
-use reth_primitives::{keccak256, Account, B256};
+use reth_primitives::{keccak256, Account, Address, B256};
 use reth_provider::{AccountExtReader, DatabaseProviderRW, HashingWriter, StatsReader};
 use reth_stages_api::{
     AccountHashingCheckpoint, EntitiesCheckpoint, ExecInput, ExecOutput, Stage, StageCheckpoint,
@@ -164,7 +164,7 @@ impl<DB: Database> Stage<DB> for AccountHashingStage {
                 // Spawn the hashing task onto the global rayon pool
                 rayon::spawn(move || {
                     for (address, account) in chunk {
-                        let address = address.key().unwrap();
+                        let address: Address = address.key().unwrap();
                         let _ = tx.send((RawKey::new(keccak256(address)), account));
                     }
                 });

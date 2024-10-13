@@ -2,7 +2,7 @@
 use criterion::{
     criterion_group, criterion_main, measurement::WallTime, BenchmarkGroup, Criterion,
 };
-use pprof::criterion::{Output, PProfProfiler};
+
 use proptest::{
     prelude::*,
     strategy::ValueTree,

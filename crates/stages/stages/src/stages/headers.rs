@@ -130,7 +130,15 @@ where
             td += header.difficulty;
 
             // Header validation
-            self.consensus.validate_header_with_total_difficulty(&header, td).map_err(|error| {
+
+            let res = self.consensus.validate_header_with_total_difficulty(&header, td);
+
+            if let Err(ref err) = res {
+                println!("validate_header_with_total_difficulty() block: {} err: {}", header.number, err);
+            }
+
+
+            res.map_err(|error| {
                 StageError::Block {
                     block: Box::new(header.clone().seal(header_hash)),
                     error: BlockErrorKind::Validation(error),
@@ -246,6 +254,7 @@ where
                             return Poll::Ready(Ok(()))
                         }
                     }
+                    info!(target: "sync::stages::headers", "Header loop OK");
                 }
                 Some(Err(HeadersDownloaderError::DetachedHead { local_head, header, error })) => {
                     error!(target: "sync::stages::headers", %error, "Cannot attach header to head");

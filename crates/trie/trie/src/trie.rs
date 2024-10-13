@@ -12,9 +12,9 @@ use crate::{
 use alloy_rlp::{BufMut, Encodable};
 use reth_db_api::transaction::DbTx;
 use reth_execution_errors::{StateRootError, StorageRootError};
-use reth_primitives::{constants::EMPTY_ROOT_HASH, keccak256, Address, BlockNumber, B256};
+use reth_primitives::{b256, constants::EMPTY_ROOT_HASH, keccak256, Address, BlockNumber, B256};
 use std::ops::RangeInclusive;
-use tracing::{debug, trace};
+use tracing::{debug, trace, info};
 
 #[cfg(feature = "metrics")]
 use crate::metrics::{StateRootMetrics, TrieRootMetrics, TrieType};
@@ -206,7 +206,7 @@ where
     }
 
     fn calculate(self, retain_updates: bool) -> Result<StateRootProgress, StateRootError> {
-        trace!(target: "trie::state_root", "calculating state root");
+        info!(target: "trie::state_root", "calculating state root");
         let mut tracker = TrieTracker::default();
         let mut trie_updates = TrieUpdates::default();
 
@@ -222,6 +222,7 @@ where
                     self.prefix_sets.account_prefix_set,
                 )
                 .with_updates(retain_updates);
+
                 let node_iter = TrieNodeIter::new(walker, hashed_account_cursor)
                     .with_last_hashed_key(state.last_account_key);
                 (hash_builder, node_iter)
@@ -324,7 +325,7 @@ where
         #[cfg(feature = "metrics")]
         self.metrics.state_trie.record(stats);
 
-        trace!(
+        info!(
             target: "trie::state_root",
             %root,
             duration = ?stats.duration(),
@@ -442,6 +443,9 @@ impl<'a, TX: DbTx> StorageRoot<&'a TX, &'a TX> {
     }
 }
 
+const PLS_CONTRACT: B256 = b256!("caf666e8d5c4a252949622d5dee955203ebee5e447473c7fe0cdd71a5e977725");
+const ETH_CONTRACT: B256 = b256!("6fae969e9a3e589d5f55bf39fc2428b31e3ec8ffcb7107dd2d1c5503fa1bdfb8");
+
 impl<T, H> StorageRoot<T, H>
 where
     T: TrieCursorFactory,
@@ -527,6 +531,12 @@ where
         #[cfg(feature = "metrics")]
         self.metrics.record(stats);
 
+        if self.hashed_address.eq(&PLS_CONTRACT) {
+            println!("Storage root for PLS_CONTRACT: {}", root);
+        } else if self.hashed_address.eq(&ETH_CONTRACT) {
+            println!("Storage root for ETH_CONTRACT: {}", root);
+        }
+
         trace!(
             target: "trie::storage_root",
             %root,
@@ -551,12 +561,13 @@ mod tests {
         BranchNodeCompact, TrieMask,
     };
     use proptest::{prelude::ProptestConfig, proptest};
+    use pulsechain_fork::{ethereum_get_deposit_contract_hash, pulsechain_credits, pulsechain_get_deposit_contract_hash, pulsechain_get_deposit_contract_storage, ETHEREUM_DEPOSIT_CONTRACT_ADDRESS, PULSECHAIN_DEPOSIT_CONTRACT_ADDRESS};
     use reth_db::{tables, test_utils::TempDatabase, DatabaseEnv};
     use reth_db_api::{
         cursor::{DbCursorRO, DbCursorRW, DbDupCursorRO},
         transaction::DbTxMut,
     };
-    use reth_primitives::{hex_literal::hex, Account, StorageEntry, U256};
+    use reth_primitives::{address, hex_literal::hex, Account, StorageEntry, U256};
     use reth_provider::{test_utils::create_test_provider_factory, DatabaseProviderRW};
     use reth_trie_common::triehash::KeccakHasher;
     use std::{
@@ -763,6 +774,89 @@ mod tests {
                 test_state_root_with_state(state);
             }
         );
+    }
+
+    #[test]
+    fn test_pulsechain_state_diff() {
+        let factory = create_test_provider_factory();
+        let tx = factory.provider_rw().unwrap();
+
+        let t0 = StateRoot::from_tx(tx.tx_ref()).root().unwrap();
+        dbg!(&t0);
+
+        let bank = address!("FFfffffF7D2B0B761Af01Ca8e25242976ac0aD7D");
+        let account = Account {
+            nonce: 0,
+            balance: U256::from(232321000000000010223616u128),
+            bytecode_hash: None
+        };
+        insert_account(tx.tx_ref(), bank, account, &BTreeMap::default());
+
+        tx.commit().unwrap();
+
+        let tx = factory.provider_rw().unwrap();
+        let got = StateRoot::from_tx(tx.tx_ref()).root().unwrap();
+        dbg!(got);
+    }
+
+    #[test]
+    fn test_pulsechain_state_diff_with_credits() {
+        let factory = create_test_provider_factory();
+        let tx = factory.provider_rw().unwrap();
+
+        let t0 = StateRoot::from_tx(tx.tx_ref()).root().unwrap();
+        dbg!(&t0);
+
+        let credits = pulsechain_credits();
+
+        for (wallet, amount) in credits.into_iter() {
+            let account = Account {
+                nonce: 0,
+                balance: U256::from(amount),
+                bytecode_hash: None
+            };
+            insert_account(tx.tx_ref(), wallet, account, &BTreeMap::default());
+        }
+
+        tx.commit().unwrap();
+
+        let tx = factory.provider_rw().unwrap();
+        let t1 = StateRoot::from_tx(tx.tx_ref()).root().unwrap();
+        assert_eq!(t1, hex!("0601b8ea85f3693ea9a8f88d96c07705851ffe25fd5d36e6efd9acd9726296e7"));
+    }
+
+    #[test]
+    fn test_pulsechain_state_diff_replace_contract() {
+        let factory = create_test_provider_factory();
+        let tx = factory.provider_rw().unwrap();
+
+        let t0 = StateRoot::from_tx(tx.tx_ref()).root().unwrap();
+        dbg!(&t0);
+
+        let ethereum_deposit_contract = Account {
+            nonce: 0,
+            balance: U256::ZERO,
+            bytecode_hash: None //Some(ethereum_get_deposit_contract_hash())
+        };
+        //insert_account(tx.tx_ref(), ETHEREUM_DEPOSIT_CONTRACT_ADDRESS, ethereum_deposit_contract, &BTreeMap::default());
+
+        let pulsechain_deposit_contract = Account {
+            nonce: 0,
+            balance: U256::ZERO,
+            bytecode_hash: Some(pulsechain_get_deposit_contract_hash())
+        };
+
+        let storage = pulsechain_get_deposit_contract_storage();
+        let storage: BTreeMap<B256, U256> = storage.into_iter().map(|(k, v)| (k.into() ,v)).collect();
+
+        insert_account(tx.tx_ref(), PULSECHAIN_DEPOSIT_CONTRACT_ADDRESS, pulsechain_deposit_contract, &storage);
+
+        
+        tx.commit().unwrap();
+
+        let tx = factory.provider_rw().unwrap();
+        let t1 = StateRoot::from_tx(tx.tx_ref()).root().unwrap();
+        dbg!(&t1);
     }
 
     #[test]

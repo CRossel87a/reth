@@ -3,7 +3,7 @@ pub use info::ChainInfo;
 pub use spec::{
     AllGenesisFormats, BaseFeeParams, BaseFeeParamsKind, ChainSpec, ChainSpecBuilder,
     DepositContract, DisplayHardforks, ForkBaseFeeParams, ForkCondition, DEV, GOERLI, HOLESKY,
-    MAINNET, SEPOLIA,
+    MAINNET, SEPOLIA, PULSECHAIN,
 };
 #[cfg(feature = "optimism")]
 pub use spec::{BASE_MAINNET, BASE_SEPOLIA, OP_MAINNET, OP_SEPOLIA};

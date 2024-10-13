@@ -1,3 +1,4 @@
+use pulsechain_fork::{ETHEREUM_DEPOSIT_CONTRACT_ADDRESS, PULSECHAIN_DEPOSIT_CONTRACT_ADDRESS, PULSECHAIN_FORK_BLOCK};
 use rayon::slice::ParallelSliceMut;
 use reth_db::tables;
 use reth_db_api::{
@@ -36,7 +37,13 @@ impl StateReverts {
         for (block_index, mut storage_changes) in self.0.storage.into_iter().enumerate() {
             let block_number = first_block + block_index as BlockNumber;
 
-            tracing::trace!(target: "provider::reverts", block_number, "Writing block change");
+
+            if block_number == PULSECHAIN_FORK_BLOCK {
+                tracing::info!(target: "provider::reverts", block_number, "Writing block change");
+            }
+            
+
+
             // sort changes by address.
             storage_changes.par_sort_unstable_by_key(|a| a.address);
             for PlainStorageRevert { address, wiped, storage_revert } in storage_changes {
@@ -54,7 +61,11 @@ impl StateReverts {
                 // See [StorageWipe::Primary] for more details.
                 let mut wiped_storage = Vec::new();
                 if wiped {
-                    tracing::trace!(target: "provider::reverts", ?address, "Wiping storage");
+                    if block_number == PULSECHAIN_FORK_BLOCK && address == ETHEREUM_DEPOSIT_CONTRACT_ADDRESS {
+                        println!("Wiping storage of ETHEREUM_DEPOSIT_CONTRACT_ADDRESS");
+                        tracing::info!(target: "provider::reverts", ?address, "Wiping storage");
+                    }
+                    
                     if let Some((_, entry)) = storages_cursor.seek_exact(address)? {
                         wiped_storage.push((entry.key, entry.value));
                         while let Some(entry) = storages_cursor.next_dup_val()? {
@@ -80,6 +91,15 @@ impl StateReverts {
             account_block_reverts.par_sort_by_key(|a| a.0);
 
             for (address, info) in account_block_reverts {
+
+                if block_number == PULSECHAIN_FORK_BLOCK {
+                    if address == ETHEREUM_DEPOSIT_CONTRACT_ADDRESS {
+                        println!("Writing account changes to ETHEREUM_DEPOSIT_CONTRACT_ADDRESS");
+                    } else if address == PULSECHAIN_DEPOSIT_CONTRACT_ADDRESS {
+                        println!("Writing account changes to PULSECHAIN_DEPOSIT_CONTRACT_ADDRESS");
+                    }
+                }   
+
                 account_changeset_cursor.append_dup(
                     block_number,
                     AccountBeforeTx { address, info: info.map(into_reth_acc) },

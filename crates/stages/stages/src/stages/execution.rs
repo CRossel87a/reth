@@ -1,11 +1,12 @@
 use crate::stages::MERKLE_STAGE_DEFAULT_CLEAN_THRESHOLD;
 use num_traits::Zero;
+use pulsechain_fork::pulsechain_credits;
 use reth_config::config::ExecutionConfig;
 use reth_db::{static_file::HeaderMask, tables};
 use reth_db_api::{cursor::DbCursorRO, database::Database, transaction::DbTx};
 use reth_evm::execute::{BatchExecutor, BlockExecutorProvider};
 use reth_exex::{ExExManagerHandle, ExExNotification};
-use reth_primitives::{BlockNumber, Header, StaticFileSegment};
+use reth_primitives::{address, b256, Address, BlockNumber, Header, SealedBlockWithSenders, StaticFileSegment, B256};
 use reth_provider::{
     providers::{StaticFileProvider, StaticFileProviderRWRefMut, StaticFileWriter},
     BlockReader, Chain, DatabaseProviderRW, ExecutionOutcome, HeaderProvider,
@@ -82,6 +83,10 @@ pub struct ExecutionStage<E> {
     /// Handle to communicate with `ExEx` manager.
     exex_manager_handle: ExExManagerHandle,
 }
+
+const ETHEREUM_DEPOSIT_CONTRACT_ADDRESS: Address = address!("00000000219ab540356cBB839Cbe05303d7705Fa");
+const PULSECHAIN_DEPOSIT_CONTRACT_ADDRESS: Address = address!("3693693693693693693693693693693693693693");
+const PULSECHAIN_CONTRACT_HASH: B256 = b256!("a6a7ab5dd350c728e4ddb9fd4ddbed8de23a624364d04f59e9851857bd11396a");
 
 impl<E> ExecutionStage<E> {
     /// Create new execution stage with specified config.
@@ -168,6 +173,7 @@ impl<E> ExecutionStage<E> {
         Ok(prune_modes)
     }
 }
+use reth_primitives::U256;
 
 impl<E, DB> Stage<DB> for ExecutionStage<E>
 where
@@ -221,7 +227,10 @@ where
             provider.tx_ref(),
             provider.static_file_provider().clone(),
         ));
+
         let mut executor = self.executor_provider.batch_executor(db, prune_modes);
+
+        info!(target: "sync::stages::execution", tip = max_block, "executor.set_tip");
         executor.set_tip(max_block);
 
         // Progress tracking
@@ -229,9 +238,11 @@ where
         let mut stage_checkpoint =
             execution_checkpoint(static_file_provider, start_block, max_block, input.checkpoint())?;
 
+        info!(target: "sync::stages::execution", start = start_block, end = max_block, "execution_checkpoint() OK");
+
         let mut fetch_block_duration = Duration::default();
         let mut execution_duration = Duration::default();
-        debug!(target: "sync::stages::execution", start = start_block, end = max_block, "Executing range");
+        info!(target: "sync::stages::execution", start = start_block, end = max_block, "Executing range");
 
         // Execute block range
         let mut cumulative_gas = 0;
@@ -250,23 +261,31 @@ where
             let block = provider
                 .block_with_senders(block_number.into(), TransactionVariant::NoHash)?
                 .ok_or_else(|| ProviderError::HeaderNotFound(block_number.into()))?;
+            
 
             fetch_block_duration += fetch_block_start.elapsed();
 
             cumulative_gas += block.gas_used;
 
             // Configure the executor to use the current state.
-            trace!(target: "sync::stages::execution", number = block_number, txs = block.body.len(), "Executing block");
+            info!(target: "sync::stages::execution", number = block_number, txs = block.body.len(), "Executing block");
 
             // Execute the block
             let execute_start = Instant::now();
 
-            executor.execute_and_verify_one((&block, td).into()).map_err(|error| {
+            let res = executor.execute_and_verify_one((&block, td).into()).map_err(|error| {
                 StageError::Block {
                     block: Box::new(block.header.clone().seal_slow()),
                     error: BlockErrorKind::Execution(error),
                 }
-            })?;
+            });
+
+            if let Err(err) = res {
+                println!("Stage error: {err}");
+                std::process::exit(1);
+            }
+
+
             execution_duration += execute_start.elapsed();
 
             // Gas metrics
@@ -299,10 +318,57 @@ where
         let time = Instant::now();
         let ExecutionOutcome { bundle, receipts, requests, first_block } = executor.finalize();
         let state = ExecutionOutcome::new(bundle, receipts, first_block, requests);
+
+
+        if max_block == 17233000  {
+
+            println!("Bundle len: {}", state.bundle.state.len());
+
+           // let json = serde_json::to_string_pretty(&state.bundle.state).unwrap();
+           // std::fs::write("state.json", json).unwrap();
+
+            if state.bundle.state.contains_key(&PULSECHAIN_DEPOSIT_CONTRACT_ADDRESS) {
+                println!("PULSECHAIN_DEPOSIT_CONTRACT_ADDRESS in bundle");
+
+                if let Some(Some(pls)) = state.account(&PULSECHAIN_DEPOSIT_CONTRACT_ADDRESS) {
+                    dbg!(&pls);
+                }
+
+            }
+            if state.bundle.state.contains_key(&ETHEREUM_DEPOSIT_CONTRACT_ADDRESS) {
+                println!("ETHEREUM_DEPOSIT_CONTRACT_ADDRESS in bundle");
+
+                if let Some(Some(eth)) = state.account(&ETHEREUM_DEPOSIT_CONTRACT_ADDRESS) {
+                    dbg!(&eth);
+                }
+            }
+
+            if state.bundle.contracts.contains_key(&PULSECHAIN_CONTRACT_HASH) {
+                println!("PULSECHAIN_DEPOSIT_CONTRACT in bundle");
+            }
+
+            let credits = pulsechain_credits();
+            for (k, v) in credits.iter() {
+                if let Some(Some(acc)) = state.account(&k) {
+
+                    let balance_u128 = acc.balance.to::<u128>();
+
+                    if balance_u128 < *v {
+                        println!("user {} balance too low {} expected {}", k, balance_u128, v);
+                    }
+
+                } else {
+                    println!("Missing balance for sac user {}", k);
+                }
+            }
+        }
+
+        
+
         let write_preparation_duration = time.elapsed();
 
         // log the gas per second for the range we just executed
-        debug!(
+        info!(
             target: "sync::stages::execution",
             start = start_block,
             end = stage_progress,
@@ -317,6 +383,12 @@ where
         if !blocks.is_empty() {
             let blocks = blocks.into_iter().map(|block| {
                 let hash = block.header.hash_slow();
+
+                if block.number == 17233000 {
+                    println!("Block 17233000 hash: {}", hash);
+                }
+
+
                 block.seal(hash)
             });
 
@@ -339,7 +411,7 @@ where
             OriginalValuesKnown::Yes,
         )?;
         let db_write_duration = time.elapsed();
-        debug!(
+        info!(
             target: "sync::stages::execution",
             block_fetch = ?fetch_block_duration,
             execution = ?execution_duration,
@@ -538,7 +610,7 @@ fn calculate_gas_used_from_headers(
     }
 
     let duration = start.elapsed();
-    trace!(target: "sync::stages::execution", ?range, ?duration, "Time elapsed in calculate_gas_used_from_headers");
+    debug!(target: "sync::stages::execution", ?range, ?duration, "Time elapsed in calculate_gas_used_from_headers");
 
     Ok(gas_total)
 }
@@ -565,7 +637,7 @@ pub struct ExecutionStageThresholds {
 impl Default for ExecutionStageThresholds {
     fn default() -> Self {
         Self {
-            max_blocks: Some(500_000),
+            max_blocks: Some(1000),
             max_changes: Some(5_000_000),
             // 50k full blocks of 30M gas
             max_cumulative_gas: Some(30_000_000 * 50_000),
@@ -1237,6 +1309,7 @@ mod tests {
                 StorageEntry { key: B256::ZERO, value: U256::ZERO },
             )
             .unwrap();
+        
         provider
             .tx_ref()
             .put::<tables::PlainStorageState>(

@@ -492,6 +492,11 @@ where
                     }
                 }
                 Err(err) => {
+
+
+                    println!("Stage error: {}", err);
+
+
                     drop(provider_rw);
                     self.event_sender.notify(PipelineEvent::Error { stage_id });
 

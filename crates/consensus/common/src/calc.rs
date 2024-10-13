@@ -25,7 +25,7 @@ pub fn base_block_reward(
     total_difficulty: U256,
 ) -> Option<u128> {
     if chain_spec.chain == Chain::goerli() ||
-        chain_spec.fork(Hardfork::Paris).active_at_ttd(total_difficulty, block_difficulty)
+        (chain_spec.fork(Hardfork::Paris).active_at_ttd(total_difficulty, block_difficulty) && !(chain_spec.chain().id() == 369 && block_number == 17_233_000))
     {
         None
     } else if chain_spec.fork(Hardfork::Constantinople).active_at_block(block_number) {

@@ -72,16 +72,19 @@ impl ConfigureEvm for EthEvmConfig {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use reth_primitives::revm_primitives::{BlockEnv, CfgEnv, SpecId};
+    use reth_primitives::{revm_primitives::{BlockEnv, CfgEnv, SpecId}, MAINNET, PULSECHAIN};
 
     #[test]
     #[ignore]
     fn test_fill_cfg_and_block_env() {
         let mut cfg_env = CfgEnvWithHandlerCfg::new_with_spec_id(CfgEnv::default(), SpecId::LATEST);
         let mut block_env = BlockEnv::default();
-        let header = Header::default();
-        let chain_spec = ChainSpec::default();
+        let mut header = Header::default();
+        let chain_spec = &PULSECHAIN;
         let total_difficulty = U256::ZERO;
+
+        header.number = 17_233_000 - 1;
+        block_env.number = reth_primitives::alloy_primitives::Uint::from(header.number);
 
         EthEvmConfig::fill_cfg_and_block_env(
             &mut cfg_env,
@@ -91,6 +94,10 @@ mod tests {
             total_difficulty,
         );
 
-        assert_eq!(cfg_env.chain_id, chain_spec.chain().id());
+
+        let spec_chain_id = chain_spec.chain().id();
+        dbg!(spec_chain_id);
+
+        assert_eq!(cfg_env.chain_id, spec_chain_id);
     }
 }

@@ -1,4 +1,5 @@
 use itertools::Itertools;
+use pulsechain_fork::ETHEREUM_DEPOSIT_CONTRACT_ADDRESS;
 use reth_config::config::{EtlConfig, HashingConfig};
 use reth_db::tables;
 use reth_db_api::{
@@ -146,7 +147,8 @@ impl<DB: Database> Stage<DB> for StorageHashingStage {
             // iterate over plain state and get newest storage value.
             // Assumption we are okay with is that plain state represent
             // `previous_stage_progress` state.
-            let storages = provider.plain_state_storages(lists)?;
+            let mut storages = provider.plain_state_storages(lists)?;
+
             provider.insert_storage_for_hashing(storages)?;
         }
 

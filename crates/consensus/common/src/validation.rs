@@ -29,7 +29,7 @@ pub fn validate_header_standalone(
         return Err(ConsensusError::BaseFeeMissing)
     }
 
-    let wd_root_missing = header.withdrawals_root.is_none() && !chain_spec.is_optimism();
+    let wd_root_missing = header.withdrawals_root.is_none() && !chain_spec.is_optimism() && header.timestamp >= 1683786515;
 
     // EIP-4895: Beacon chain push withdrawals as operations
     if chain_spec.is_shanghai_active_at_timestamp(header.timestamp) && wd_root_missing {

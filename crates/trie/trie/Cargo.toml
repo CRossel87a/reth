@@ -19,6 +19,7 @@ reth-db.workspace = true
 reth-db-api.workspace = true
 reth-stages-types.workspace = true
 reth-trie-common.workspace = true
+pulsechain_fork.workspace = true
 
 revm.workspace = true
 

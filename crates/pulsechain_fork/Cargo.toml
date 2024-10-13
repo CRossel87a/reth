@@ -1,0 +1,7 @@
+[package]
+name = "pulsechain_fork"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+reth-primitives.workspace = true

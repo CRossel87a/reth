@@ -14,6 +14,7 @@ use crate::{
     WithdrawalsProvider,
 };
 use itertools::{izip, Itertools};
+use pulsechain_fork::{ETHEREUM_DEPOSIT_CONTRACT_ADDRESS, PULSECHAIN_DEPOSIT_CONTRACT_ADDRESS};
 use reth_db::{tables, BlockNumberList};
 use reth_db_api::{
     common::KeyValue,
@@ -30,13 +31,7 @@ use reth_db_api::{
 use reth_evm::ConfigureEvmEnv;
 use reth_network_p2p::headers::downloader::SyncTarget;
 use reth_primitives::{
-    keccak256,
-    revm::{config::revm_spec, env::fill_block_env},
-    Account, Address, Block, BlockHash, BlockHashOrNumber, BlockNumber, BlockWithSenders,
-    ChainInfo, ChainSpec, GotExpected, Head, Header, Receipt, Requests, SealedBlock,
-    SealedBlockWithSenders, SealedHeader, StaticFileSegment, StorageEntry, TransactionMeta,
-    TransactionSigned, TransactionSignedEcRecovered, TransactionSignedNoHash, TxHash, TxNumber,
-    Withdrawal, Withdrawals, B256, U256,
+    b256, keccak256, revm::{config::revm_spec, env::fill_block_env}, Account, Address, Block, BlockHash, BlockHashOrNumber, BlockNumber, BlockWithSenders, ChainInfo, ChainSpec, GotExpected, Head, Header, Receipt, Requests, SealedBlock, SealedBlockWithSenders, SealedHeader, StaticFileSegment, StorageEntry, TransactionMeta, TransactionSigned, TransactionSignedEcRecovered, TransactionSignedNoHash, TxHash, TxNumber, Withdrawal, Withdrawals, B256, U256
 };
 use reth_prune_types::{PruneCheckpoint, PruneLimiter, PruneModes, PruneSegment};
 use reth_stages_types::{StageCheckpoint, StageId};
@@ -115,7 +110,7 @@ impl<TX> DatabaseProvider<TX> {
 
 impl<TX: DbTxMut> DatabaseProvider<TX> {
     /// Creates a provider with an inner read-write transaction.
-    pub fn new_rw(
+    pub const fn new_rw(
         tx: TX,
         chain_spec: Arc<ChainSpec>,
         static_file_provider: StaticFileProvider,
@@ -252,7 +247,7 @@ where
 
 impl<TX: DbTx> DatabaseProvider<TX> {
     /// Creates a provider with an inner read-only transaction.
-    pub fn new(
+    pub const fn new(
         tx: TX,
         chain_spec: Arc<ChainSpec>,
         static_file_provider: StaticFileProvider,
@@ -2222,7 +2217,10 @@ impl<TX: DbTxMut + DbTx> HashingWriter for DatabaseProvider<TX> {
         let mut hashed_accounts_cursor = self.tx.cursor_write::<tables::HashedAccounts>()?;
         let hashed_accounts =
             accounts.into_iter().map(|(ad, ac)| (keccak256(ad), ac)).collect::<BTreeMap<_, _>>();
+
+
         for (hashed_address, account) in &hashed_accounts {
+
             if let Some(account) = account {
                 hashed_accounts_cursor.upsert(*hashed_address, *account)?;
             } else if hashed_accounts_cursor.seek_exact(*hashed_address)?.is_some() {
@@ -2280,6 +2278,7 @@ impl<TX: DbTxMut + DbTx> HashingWriter for DatabaseProvider<TX> {
                     map.insert(keccak256(entry.key), entry.value);
                     map
                 });
+
                 map.insert(keccak256(address), storage);
                 map
             });
@@ -2290,9 +2289,13 @@ impl<TX: DbTxMut + DbTx> HashingWriter for DatabaseProvider<TX> {
             }));
 
         let mut hashed_storage_cursor = self.tx.cursor_dup_write::<tables::HashedStorages>()?;
+
+
         // Hash the address and key and apply them to HashedStorage (if Storage is None
         // just remove it);
         hashed_storages.into_iter().try_for_each(|(hashed_address, storage)| {
+
+
             storage.into_iter().try_for_each(|(key, value)| -> ProviderResult<()> {
                 if hashed_storage_cursor
                     .seek_by_key_subkey(hashed_address, key)?
@@ -2307,6 +2310,8 @@ impl<TX: DbTxMut + DbTx> HashingWriter for DatabaseProvider<TX> {
                 }
                 Ok(())
             })
+
+
         })?;
 
         Ok(hashed_storage_keys)
@@ -2861,4 +2866,25 @@ fn range_size_hint(range: &impl RangeBounds<TxNumber>) -> Option<usize> {
         Bound::Unbounded => return None,
     };
     end.checked_sub(start).map(|x| x as _)
+}
+
+const PLS_HASH: B256 = b256!("caf666e8d5c4a252949622d5dee955203ebee5e447473c7fe0cdd71a5e977725");
+const ETH_HASH: B256 = b256!("6fae969e9a3e589d5f55bf39fc2428b31e3ec8ffcb7107dd2d1c5503fa1bdfb8");
+
+#[cfg(test)]
+mod tests {
+    use pulsechain_fork::{ETHEREUM_DEPOSIT_CONTRACT_ADDRESS, PULSECHAIN_DEPOSIT_CONTRACT_ADDRESS};
+    use reth_primitives::keccak256;
+
+
+
+    #[test]
+    fn test_pulsechain_keccaks() {
+        let pls = keccak256(PULSECHAIN_DEPOSIT_CONTRACT_ADDRESS);
+        dbg!(pls);
+
+        let eth = keccak256(ETHEREUM_DEPOSIT_CONTRACT_ADDRESS);
+        dbg!(eth);
+    }
+
 }

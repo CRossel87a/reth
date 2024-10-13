@@ -32,6 +32,11 @@ reth-trie = { workspace = true, features = ["metrics"] }
 
 reth-testing-utils = { workspace = true, optional = true }
 
+# Pulsechain forks
+
+pulsechain_fork.workspace = true
+serde_json.workspace = true
+
 # async
 tokio = { workspace = true, features = ["sync"] }
 futures-util.workspace = true
@@ -76,12 +81,6 @@ criterion = { workspace = true, features = ["async_tokio"] }
 # io
 serde_json.workspace = true
 
-[target.'cfg(not(target_os = "windows"))'.dev-dependencies]
-pprof = { workspace = true, features = [
-    "flamegraph",
-    "frame-pointer",
-    "criterion",
-] }
 
 [features]
 test-utils = [

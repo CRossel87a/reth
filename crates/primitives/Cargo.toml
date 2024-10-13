@@ -79,11 +79,6 @@ triehash = "0.8"
 sucds = "0.8.1"
 
 criterion.workspace = true
-pprof = { workspace = true, features = [
-    "flamegraph",
-    "frame-pointer",
-    "criterion",
-] }
 secp256k1.workspace = true
 
 [features]

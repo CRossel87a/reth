@@ -50,6 +50,8 @@ pub enum Hardfork {
     GrayGlacier,
     /// Paris: <https://github.com/ethereum/execution-specs/blob/master/network-upgrades/mainnet-upgrades/paris.md>.
     Paris,
+    ///
+    PrimordialPulseBlock,
     /// Bedrock: <https://blog.oplabs.co/introducing-optimism-bedrock>.
     #[cfg(feature = "optimism")]
     Bedrock,
