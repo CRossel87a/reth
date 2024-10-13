@@ -230,7 +230,7 @@ impl<C: ChainSpecParser<ChainSpec = ChainSpec>> Command<C> {
 
             let res = pipeline.run_loop().await;
             if let Err(err) = &res {
-                error!("pipeline.run_loop: {}",err);
+                debug!("pipeline.run_loop: {}",err);
             }
 
             let result = res?;

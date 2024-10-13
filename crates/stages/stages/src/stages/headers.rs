@@ -136,7 +136,14 @@ where
             td += header.difficulty;
 
             // Header validation
-            self.consensus.validate_header_with_total_difficulty(&header, td).map_err(|error| {
+
+            let res = self.consensus.validate_header_with_total_difficulty(&header, td);
+
+            if let Err(err) = &res {
+                debug!("consensus.validate_header_with_total_difficulty err: {}",err);
+            }
+
+            res.map_err(|error| {
                 StageError::Block {
                     block: Box::new(SealedHeader::new(header.clone(), header_hash)),
                     error: BlockErrorKind::Validation(error),
@@ -291,7 +298,14 @@ where
 
         // Write the headers and related tables to DB from ETL space
         let to_be_processed = self.hash_collector.len() as u64;
-        let last_header_number = self.write_headers(provider, provider.static_file_provider())?;
+
+        let res = self.write_headers(provider, provider.static_file_provider());
+
+        if let Err(err) = &res {
+            debug!("self.write_headers err: {}",err);
+        }
+
+        let last_header_number = res?;
 
         // Clear ETL collectors
         self.hash_collector.clear();
