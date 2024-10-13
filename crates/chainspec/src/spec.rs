@@ -57,7 +57,7 @@ pub static MAINNET: Lazy<Arc<ChainSpec>> = Lazy::new(|| {
 /// The Ethereum mainnet spec
 pub static THREESIXNINE: Lazy<Arc<ChainSpec>> = Lazy::new(|| {
     let mut spec = ChainSpec {
-        chain: Chain::named(NamedChain::Pulsechain),
+        chain: Chain::from_named(NamedChain::Pulsechain),
         genesis: serde_json::from_str(include_str!("../res/genesis/mainnet.json"))
             .expect("Can't deserialize Mainnet genesis json"),
         genesis_hash: once_cell_set(MAINNET_GENESIS_HASH),
