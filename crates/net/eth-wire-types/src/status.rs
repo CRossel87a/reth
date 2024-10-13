@@ -217,10 +217,10 @@ impl StatusBuilder {
 mod tests {
     use crate::{EthVersion, Status};
     use alloy_genesis::Genesis;
-    use alloy_primitives::{hex, B256, U256};
+    use alloy_primitives::{b256, hex, B256, U256};
     use alloy_rlp::{Decodable, Encodable};
     use rand::Rng;
-    use reth_chainspec::{Chain, ChainSpec, ForkCondition, NamedChain};
+    use reth_chainspec::{Chain, ChainSpec, ForkCondition, NamedChain, THREESIXNINE};
     use reth_primitives::{EthereumHardfork, ForkHash, ForkId, Head};
     use std::str::FromStr;
 
@@ -391,5 +391,29 @@ mod tests {
         assert_eq!(status.total_difficulty, total_difficulty);
         assert_eq!(status.blockhash, head_hash);
         assert_eq!(status.genesis, genesis_hash);
+    }
+
+    #[test]
+    fn test_fork_id_threesixnine() {
+        
+        let head = Head { 
+            number: 21648768, 
+            hash: b256!("a51075528c0cae4622f22334d4f30b57ba04c1966580da346c8a6ec133a52d1b"), 
+            difficulty: U256::ZERO, 
+            total_difficulty: U256::from(58750003716598352947541u128),  
+            timestamp: 1728752475
+        };
+        let spec = THREESIXNINE.fork_id(&head);
+        dbg!(spec);
+
+        let head = Head { 
+            number: 0, 
+            hash: b256!("d4e56740f876aef8c010b86a40d5f56745a118d0906a34e69aec8c0db1cb8fa3"), 
+            difficulty: U256::from(17179869184u128), 
+            total_difficulty: U256::from(17179869184u128),  
+            timestamp: 0
+        };
+        let spec = THREESIXNINE.fork_id(&head);
+        dbg!(spec);
     }
 }
