@@ -30,7 +30,7 @@ use std::{
     task::{ready, Context, Poll},
 };
 use thiserror::Error;
-use tracing::{error, trace};
+use tracing::{error, trace, debug};
 
 /// A heuristic that is used to determine the number of requests that should be prepared for a peer.
 /// This should ensure that there are always requests lined up for peers to handle while the
@@ -264,6 +264,8 @@ where
                 validated.last().or_else(|| self.lowest_validated_header())
             {
                 if let Err(error) = self.validate(validated_header, &parent) {
+                    debug!("self.validate err: {}",err);
+
                     trace!(target: "downloaders::headers", %error ,"Failed to validate header");
                     return Err(
                         HeadersResponseError { request, peer_id: Some(peer_id), error }.into()
@@ -284,6 +286,8 @@ where
         {
             // Every header must be valid on its own
             if let Err(error) = self.consensus.validate_header(last_header) {
+
+
                 trace!(target: "downloaders::headers", %error, "Failed to validate header");
                 return Err(HeadersResponseError {
                     request,

@@ -95,18 +95,23 @@ impl<ChainSpec: Send + Sync + EthChainSpec + EthereumHardforks + Debug> Consensu
     for EthBeaconConsensus<ChainSpec>
 {
     fn validate_header(&self, header: &SealedHeader) -> Result<(), ConsensusError> {
+
+
         validate_header_gas(header)?;
         validate_header_base_fee(header, &self.chain_spec)?;
 
-        // EIP-4895: Beacon chain push withdrawals as operations
-        if self.chain_spec.is_shanghai_active_at_timestamp(header.timestamp) &&
-            header.withdrawals_root.is_none()
-        {
-            return Err(ConsensusError::WithdrawalsRootMissing)
-        } else if !self.chain_spec.is_shanghai_active_at_timestamp(header.timestamp) &&
-            header.withdrawals_root.is_some()
-        {
-            return Err(ConsensusError::WithdrawalsRootUnexpected)
+        if chain_spec.chain_id() != 369 || (chain_spec.chain_id() == 369 && block.timestamp >= 1683786515) {
+            // EIP-4895: Beacon chain push withdrawals as operations
+            if self.chain_spec.is_shanghai_active_at_timestamp(header.timestamp) && header.withdrawals_root.is_none()
+            {
+                return Err(ConsensusError::WithdrawalsRootMissing)
+
+            } else if !self.chain_spec.is_shanghai_active_at_timestamp(header.timestamp) &&
+                header.withdrawals_root.is_some()
+            {
+                return Err(ConsensusError::WithdrawalsRootUnexpected)
+            }
+
         }
 
         // Ensures that EIP-4844 fields are valid once cancun is active.
