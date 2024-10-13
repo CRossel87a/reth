@@ -415,6 +415,8 @@ impl<N: ProviderNodeTypes> Pipeline<N> {
             });
 
             if let Err(err) = stage.execute_ready(exec_input).await {
+                error!("execute_ready Stage Error: {}",err);
+
                 self.event_sender.notify(PipelineEvent::Error { stage_id });
 
                 match on_stage_error(&self.provider_factory, stage_id, prev_checkpoint, err)? {
@@ -475,6 +477,9 @@ impl<N: ProviderNodeTypes> Pipeline<N> {
                     }
                 }
                 Err(err) => {
+
+                    error!("execute() Stage Error: {}",err);
+
                     drop(provider_rw);
                     self.event_sender.notify(PipelineEvent::Error { stage_id });
 

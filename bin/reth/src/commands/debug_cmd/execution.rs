@@ -227,7 +227,13 @@ impl<C: ChainSpecParser<ChainSpec = ChainSpec>> Command<C> {
             // Run the pipeline
             info!(target: "reth::cli", from = next_block, to = target_block, tip = ?target_block_hash, "Starting pipeline");
             pipeline.set_tip(target_block_hash);
-            let result = pipeline.run_loop().await?;
+
+            let res = pipeline.run_loop().await;
+            if let Err(err) = &res {
+                error!("pipeline.run_loop: {}",err);
+            }
+
+            let result = res?;
             trace!(target: "reth::cli", from = next_block, to = target_block, tip = ?target_block_hash, ?result, "Pipeline finished");
 
             // Unwind the pipeline without committing.
