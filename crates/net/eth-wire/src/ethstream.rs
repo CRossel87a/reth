@@ -157,13 +157,10 @@ where
                     .into())
                 }
 
-                info!("my fork_id: {:?} peer fork_id: {:?}", fork_filter.current(), resp.forkid);
-
                 if let Err(err) =
                     fork_filter.validate(resp.forkid).map_err(EthHandshakeError::InvalidFork)
                 {
                     self.inner.disconnect(DisconnectReason::ProtocolBreach).await?;
-                    info!("my fork_id: {:?} peer fork_id: {:?} DisconnectReason::ProtocolBreach", fork_filter.current(), resp.forkid);
                     return Err(err.into())
                 }
 
