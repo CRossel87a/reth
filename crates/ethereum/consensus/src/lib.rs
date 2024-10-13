@@ -100,7 +100,7 @@ impl<ChainSpec: Send + Sync + EthChainSpec + EthereumHardforks + Debug> Consensu
         validate_header_gas(header)?;
         validate_header_base_fee(header, &self.chain_spec)?;
 
-        if chain_spec.chain_id() != 369 || (chain_spec.chain_id() == 369 && block.timestamp >= 1683786515) {
+        if  self.chain_spec.chain_id() != 369 || ( self.chain_spec.chain_id() == 369 && header.timestamp >= 1683786515) {
             // EIP-4895: Beacon chain push withdrawals as operations
             if self.chain_spec.is_shanghai_active_at_timestamp(header.timestamp) && header.withdrawals_root.is_none()
             {

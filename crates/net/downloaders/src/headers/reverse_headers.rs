@@ -264,7 +264,7 @@ where
                 validated.last().or_else(|| self.lowest_validated_header())
             {
                 if let Err(error) = self.validate(validated_header, &parent) {
-                    debug!("self.validate err: {}",err);
+                    debug!("self.validate err: {}",error);
 
                     trace!(target: "downloaders::headers", %error ,"Failed to validate header");
                     return Err(
