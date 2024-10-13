@@ -28,7 +28,7 @@ impl Default for TransactionsManagerConfig {
         Self {
             transaction_fetcher_config: TransactionFetcherConfig::default(),
             max_transactions_seen_by_peer_history: DEFAULT_MAX_COUNT_TRANSACTIONS_SEEN_BY_PEER,
-            propagation_mode: TransactionPropagationMode::default(),
+            propagation_mode: TransactionPropagationMode::All,
         }
     }
 }
@@ -38,9 +38,9 @@ impl Default for TransactionsManagerConfig {
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 pub enum TransactionPropagationMode {
     /// Send full transactions to sqrt of current peers.
-    #[default]
     Sqrt,
     /// Always send transactions in full.
+    #[default]
     All,
     /// Send full transactions to a maximum number of peers
     Max(usize),

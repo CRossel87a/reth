@@ -41,6 +41,7 @@ pub trait Hardforks: Clone {
     /// Creates a [`ForkFilter`] for the block described by [Head].
     fn fork_filter(&self, head: Head) -> ForkFilter;
 
+    /// chainid
     fn chain_id(&self) -> u64;
 }
 

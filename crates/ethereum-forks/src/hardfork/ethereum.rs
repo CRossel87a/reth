@@ -360,6 +360,7 @@ impl EthereumHardfork {
         ]
     }
 
+    /// threesixnine
     pub const fn threesixnine() -> [(Self, ForkCondition); 17] {
         [
             (Self::Frontier, ForkCondition::Block(0)),
