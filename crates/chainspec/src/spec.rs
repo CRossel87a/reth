@@ -6,7 +6,7 @@ use alloy_genesis::Genesis;
 use alloy_primitives::{address, b256, Address, BlockNumber, B256, U256};
 use alloy_trie::EMPTY_ROOT_HASH;
 use derive_more::From;
-use once_cell::sync::{Lazy, OnceCell};
+
 use reth_ethereum_forks::{
     ChainHardforks, DisplayHardforks, EthereumHardfork, EthereumHardforks, ForkCondition,
     ForkFilter, ForkFilterKey, ForkHash, ForkId, Hardfork, Hardforks, Head, DEV_HARDFORKS,
@@ -24,10 +24,10 @@ use reth_primitives_traits::{
 };
 use reth_trie_common::root::state_root_ref_unhashed;
 
-use crate::{constants::MAINNET_DEPOSIT_CONTRACT, once_cell_set, EthChainSpec};
+use crate::{constants::MAINNET_DEPOSIT_CONTRACT, once_cell_set, EthChainSpec, LazyLock, OnceLock};
 
 /// The Ethereum mainnet spec
-pub static MAINNET: Lazy<Arc<ChainSpec>> = Lazy::new(|| {
+pub static MAINNET: LazyLock<Arc<ChainSpec>> = LazyLock::new(|| {
     let mut spec = ChainSpec {
         chain: Chain::mainnet(),
         genesis: serde_json::from_str(include_str!("../res/genesis/mainnet.json"))
@@ -83,7 +83,7 @@ pub static THREESIXNINE: Lazy<Arc<ChainSpec>> = Lazy::new(|| {
 });
 
 /// The Sepolia spec
-pub static SEPOLIA: Lazy<Arc<ChainSpec>> = Lazy::new(|| {
+pub static SEPOLIA: LazyLock<Arc<ChainSpec>> = LazyLock::new(|| {
     let mut spec = ChainSpec {
         chain: Chain::sepolia(),
         genesis: serde_json::from_str(include_str!("../res/genesis/sepolia.json"))
@@ -108,7 +108,7 @@ pub static SEPOLIA: Lazy<Arc<ChainSpec>> = Lazy::new(|| {
 });
 
 /// The Holesky spec
-pub static HOLESKY: Lazy<Arc<ChainSpec>> = Lazy::new(|| {
+pub static HOLESKY: LazyLock<Arc<ChainSpec>> = LazyLock::new(|| {
     let mut spec = ChainSpec {
         chain: Chain::holesky(),
         genesis: serde_json::from_str(include_str!("../res/genesis/holesky.json"))
@@ -134,7 +134,7 @@ pub static HOLESKY: Lazy<Arc<ChainSpec>> = Lazy::new(|| {
 ///
 /// Includes 20 prefunded accounts with `10_000` ETH each derived from mnemonic "test test test test
 /// test test test test test test test junk".
-pub static DEV: Lazy<Arc<ChainSpec>> = Lazy::new(|| {
+pub static DEV: LazyLock<Arc<ChainSpec>> = LazyLock::new(|| {
     ChainSpec {
         chain: Chain::dev(),
         genesis: serde_json::from_str(include_str!("../res/genesis/dev.json"))
@@ -210,13 +210,13 @@ pub struct ChainSpec {
     ///
     /// This is either stored at construction time if it is known using [`once_cell_set`], or
     /// computed once on the first access.
-    pub genesis_hash: OnceCell<B256>,
+    pub genesis_hash: OnceLock<B256>,
 
     /// The header corresponding to the genesis block.
     ///
     /// This is either stored at construction time if it is known using [`once_cell_set`], or
     /// computed once on the first access.
-    pub genesis_header: OnceCell<Header>,
+    pub genesis_header: OnceLock<Header>,
 
     /// The block at which [`EthereumHardfork::Paris`] was activated and the final difficulty at
     /// this block.
@@ -267,21 +267,6 @@ impl ChainSpec {
         self.chain.is_ethereum()
     }
 
-    /// Returns `true` if this chain contains Optimism configuration.
-    #[inline]
-    #[cfg(feature = "optimism")]
-    pub fn is_optimism(&self) -> bool {
-        self.chain.is_optimism() ||
-            self.hardforks.get(reth_optimism_forks::OptimismHardfork::Bedrock).is_some()
-    }
-
-    /// Returns `true` if this chain contains Optimism configuration.
-    #[inline]
-    #[cfg(not(feature = "optimism"))]
-    pub const fn is_optimism(&self) -> bool {
-        self.chain.is_optimism()
-    }
-
     /// Returns `true` if this chain is Optimism mainnet.
     #[inline]
     pub fn is_optimism_mainnet(&self) -> bool {
@@ -325,11 +310,8 @@ impl ChainSpec {
             };
 
         // If Prague is activated at genesis we set requests root to an empty trie root.
-        let requests_root = if self.is_prague_active_at_timestamp(self.genesis.timestamp) {
-            Some(EMPTY_ROOT_HASH)
-        } else {
-            None
-        };
+        let requests_root =
+            self.is_prague_active_at_timestamp(self.genesis.timestamp).then_some(EMPTY_ROOT_HASH);
 
         Header {
             gas_limit: self.genesis.gas_limit,
@@ -696,7 +678,7 @@ impl From<Genesis> for ChainSpec {
         Self {
             chain: genesis.config.chain_id.into(),
             genesis,
-            genesis_hash: OnceCell::new(),
+            genesis_hash: OnceLock::new(),
             hardforks: ChainHardforks::new(ordered_hardforks),
             paris_block_and_final_difficulty,
             deposit_contract,
@@ -740,9 +722,6 @@ impl EthereumHardforks for ChainSpec {
         self.final_paris_total_difficulty(block_number)
     }
 }
-
-#[cfg(feature = "optimism")]
-impl reth_optimism_forks::OptimismHardforks for ChainSpec {}
 
 /// A trait for reading the current chainspec.
 #[auto_impl::auto_impl(&, Arc)]
@@ -933,7 +912,7 @@ impl ChainSpecBuilder {
         ChainSpec {
             chain: self.chain.expect("The chain is required"),
             genesis: self.genesis.expect("The genesis is required"),
-            genesis_hash: OnceCell::new(),
+            genesis_hash: OnceLock::new(),
             hardforks: self.hardforks,
             paris_block_and_final_difficulty,
             deposit_contract: None,
@@ -2306,7 +2285,7 @@ mod tests {
         let spec = ChainSpec {
             chain: Chain::mainnet(),
             genesis: Genesis::default(),
-            genesis_hash: OnceCell::new(),
+            genesis_hash: OnceLock::new(),
             hardforks: ChainHardforks::new(vec![(
                 EthereumHardfork::Frontier.boxed(),
                 ForkCondition::Never,
@@ -2324,7 +2303,7 @@ mod tests {
         let spec = ChainSpec {
             chain: Chain::mainnet(),
             genesis: Genesis::default(),
-            genesis_hash: OnceCell::new(),
+            genesis_hash: OnceLock::new(),
             hardforks: ChainHardforks::new(vec![(
                 EthereumHardfork::Shanghai.boxed(),
                 ForkCondition::Never,

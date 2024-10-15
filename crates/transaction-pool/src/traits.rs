@@ -7,6 +7,7 @@ use crate::{
     validate::ValidPoolTransaction,
     AllTransactionsEvents,
 };
+use alloy_consensus::Transaction as _;
 use alloy_eips::{eip2718::Encodable2718, eip2930::AccessList, eip4844::BlobAndProofV1};
 use alloy_primitives::{Address, TxHash, TxKind, B256, U256};
 use futures_util::{ready, Stream};
@@ -293,12 +294,28 @@ pub trait TransactionPool: Send + Sync + Clone {
 
     /// Removes all transactions corresponding to the given hashes.
     ///
-    /// Also removes all _dependent_ transactions.
-    ///
     /// Consumer: Utility
     fn remove_transactions(
         &self,
         hashes: Vec<TxHash>,
+    ) -> Vec<Arc<ValidPoolTransaction<Self::Transaction>>>;
+
+    /// Removes all transactions corresponding to the given hashes.
+    ///
+    /// Also removes all _dependent_ transactions.
+    ///
+    /// Consumer: Utility
+    fn remove_transactions_and_descendants(
+        &self,
+        hashes: Vec<TxHash>,
+    ) -> Vec<Arc<ValidPoolTransaction<Self::Transaction>>>;
+
+    /// Removes all transactions from the given sender
+    ///
+    /// Consumer: Utility
+    fn remove_transactions_by_sender(
+        &self,
+        sender: Address,
     ) -> Vec<Arc<ValidPoolTransaction<Self::Transaction>>>;
 
     /// Retains only those hashes that are unknown to the pool.
