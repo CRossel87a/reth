@@ -55,7 +55,7 @@ pub static MAINNET: LazyLock<Arc<ChainSpec>> = LazyLock::new(|| {
 });
 
 /// The Ethereum mainnet spec
-pub static THREESIXNINE: Lazy<Arc<ChainSpec>> = Lazy::new(|| {
+pub static THREESIXNINE: LazyLock<Arc<ChainSpec>> = LazyLock::new(|| {
     let mut spec = ChainSpec {
         chain: Chain::from_named(NamedChain::Pulsechain),
         genesis: serde_json::from_str(include_str!("../res/genesis/mainnet.json"))
