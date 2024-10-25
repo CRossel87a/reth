@@ -13,6 +13,10 @@ pub fn mainnet_nodes() -> Vec<NodeRecord> {
     parse_nodes(&MAINNET_BOOTNODES[..])
 }
 
+pub fn threesixnine_nodes() -> Vec<NodeRecord> {
+    parse_nodes(&THREESIXNINE_BOOTNODES[..])
+}
+
 /// Returns parsed sepolia nodes
 pub fn sepolia_nodes() -> Vec<NodeRecord> {
     parse_nodes(&SEPOLIA_BOOTNODES[..])

@@ -12,8 +12,7 @@ use reth_ethereum_forks::{
     ForkFilter, ForkFilterKey, ForkHash, ForkId, Hardfork, Hardforks, Head, DEV_HARDFORKS,
 };
 use reth_network_peers::{
-    base_nodes, base_testnet_nodes, holesky_nodes, mainnet_nodes, op_nodes, op_testnet_nodes,
-    sepolia_nodes, NodeRecord,
+    base_nodes, base_testnet_nodes, holesky_nodes, mainnet_nodes, op_nodes, op_testnet_nodes, sepolia_nodes, threesixnine_nodes, NodeRecord
 };
 use reth_primitives_traits::{
     constants::{
@@ -587,6 +586,7 @@ impl ChainSpec {
         let chain = self.chain;
         match chain.try_into().ok()? {
             C::Mainnet => Some(mainnet_nodes()),
+            C::Pulsechain => Some(threesixnine_nodes()),
             C::Sepolia => Some(sepolia_nodes()),
             C::Holesky => Some(holesky_nodes()),
             C::Base => Some(base_nodes()),
