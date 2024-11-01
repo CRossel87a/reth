@@ -25,7 +25,6 @@ use alloy_primitives::{Bytes, Parity, Signature, B256, U256};
 pub use base::BASE_MAINNET;
 pub use base_sepolia::BASE_SEPOLIA;
 pub use blast::BLAST_MAINNET;
-use blast::BLAST_MAINNET;
 use derive_more::{Constructor, Deref, Display, From, Into};
 pub use dev::OP_DEV;
 #[cfg(not(feature = "std"))]
