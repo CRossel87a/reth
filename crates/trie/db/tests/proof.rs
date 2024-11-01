@@ -43,7 +43,7 @@ fn convert_to_proof<'a>(path: impl IntoIterator<Item = &'a str>) -> Vec<Bytes> {
 fn testbuildspec_proofs() {
     // Create test database and insert genesis accounts.
     let factory = create_test_provider_factory();
-    let root = insert_genesis(&factory, TEST_SPEC.clone()).unwrap();
+    let root = insert_genesis(&factory, MAINNET.clone()).unwrap();
     dbg!(root);
 }
 
