@@ -40,6 +40,14 @@ fn convert_to_proof<'a>(path: impl IntoIterator<Item = &'a str>) -> Vec<Bytes> {
 }
 
 #[test]
+fn testbuildspec_proofs() {
+    // Create test database and insert genesis accounts.
+    let factory = create_test_provider_factory();
+    let root = insert_genesis(&factory, TEST_SPEC.clone()).unwrap();
+    dbg!(root);
+}
+
+#[test]
 fn testspec_proofs() {
     // Create test database and insert genesis accounts.
     let factory = create_test_provider_factory();

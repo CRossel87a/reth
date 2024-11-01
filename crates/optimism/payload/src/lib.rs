@@ -9,7 +9,7 @@
 #![cfg_attr(docsrs, feature(doc_cfg, doc_auto_cfg))]
 #![allow(clippy::useless_let_if_seq)]
 // The `optimism` feature must be enabled to use this crate.
-#![cfg(feature = "optimism")]
+//#![cfg(feature = "optimism")]
 
 pub mod builder;
 pub use builder::OpPayloadBuilder;
