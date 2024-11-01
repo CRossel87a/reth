@@ -342,7 +342,7 @@ impl OptimismHardfork {
                     EthereumHardfork::Paris.boxed(), // OK
                     ForkCondition::TTD { fork_block: Some(0), total_difficulty: U256::ZERO }, // OK
                 ),
-                //(Self::Bedrock.boxed(), ForkCondition::Block(0)), 
+                (Self::Bedrock.boxed(), ForkCondition::Block(0)), 
                 (Self::Regolith.boxed(), ForkCondition::Timestamp(0)), // OK
                 (EthereumHardfork::Shanghai.boxed(), ForkCondition::Timestamp(0)), // OK
                 (Self::Canyon.boxed(), ForkCondition::Timestamp(0)), // OK
