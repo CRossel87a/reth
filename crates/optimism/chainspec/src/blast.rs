@@ -2,7 +2,7 @@
 
 use alloc::{sync::Arc, vec};
 
-use alloy_chains::Chain;
+use alloy_chains::{Chain, NamedChain};
 use alloy_primitives::{b256, U256};
 use reth_chainspec::{once_cell_set, BaseFeeParams, BaseFeeParamsKind, ChainSpec};
 use reth_ethereum_forks::EthereumHardfork;
@@ -14,7 +14,7 @@ use crate::{LazyLock, OpChainSpec};
 pub static BLAST_MAINNET: LazyLock<Arc<OpChainSpec>> = LazyLock::new(|| {
     OpChainSpec {
         inner: ChainSpec {
-            chain: Chain::base_mainnet(),
+            chain: Chain::from_named(NamedChain::Blast),
             genesis: serde_json::from_str(include_str!("../res/genesis/blast.json"))
                 .expect("Can't deserialize Base genesis json"),
             genesis_hash: once_cell_set(b256!(
