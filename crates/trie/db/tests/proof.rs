@@ -4,6 +4,7 @@ use alloy_consensus::EMPTY_ROOT_HASH;
 use alloy_primitives::{keccak256, Address, Bytes, B256, U256};
 use alloy_rlp::EMPTY_STRING_CODE;
 use reth_chainspec::{Chain, ChainSpec, HOLESKY, MAINNET};
+use reth_optimism_chainspec::BLAST_MAINNET;
 use reth_primitives::Account;
 use reth_provider::test_utils::{create_test_provider_factory, insert_genesis};
 use reth_trie::{proof::Proof, Nibbles};
@@ -43,7 +44,7 @@ fn convert_to_proof<'a>(path: impl IntoIterator<Item = &'a str>) -> Vec<Bytes> {
 fn testbuildspec_proofs() {
     // Create test database and insert genesis accounts.
     let factory = create_test_provider_factory();
-    let root = insert_genesis(&factory, MAINNET.clone()).unwrap();
+    let root = insert_genesis(&factory, BLAST_MAINNET.clone()).unwrap();
     dbg!(root);
 }
 

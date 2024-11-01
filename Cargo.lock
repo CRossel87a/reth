@@ -9268,6 +9268,7 @@ dependencies = [
  "reth-db-api",
  "reth-execution-errors",
  "reth-metrics",
+ "reth-optimism-chainspec",
  "reth-primitives",
  "reth-provider",
  "reth-storage-errors",
