@@ -16,6 +16,7 @@ pub mod constants;
 mod dev;
 mod op;
 mod op_sepolia;
+mod blast;
 
 use alloc::{boxed::Box, vec, vec::Vec};
 use alloy_chains::Chain;
@@ -23,6 +24,7 @@ use alloy_genesis::Genesis;
 use alloy_primitives::{Bytes, Parity, Signature, B256, U256};
 pub use base::BASE_MAINNET;
 pub use base_sepolia::BASE_SEPOLIA;
+use blast::BLAST_MAINNET;
 use derive_more::{Constructor, Deref, Display, From, Into};
 pub use dev::OP_DEV;
 #[cfg(not(feature = "std"))]
@@ -54,6 +56,17 @@ impl OpChainSpecBuilder {
             .chain(BASE_MAINNET.chain)
             .genesis(BASE_MAINNET.genesis.clone());
         let forks = BASE_MAINNET.hardforks.clone();
+        inner = inner.with_forks(forks);
+
+        Self { inner }
+    }
+
+    /// Construct a new builder from the base mainnet chain spec.
+    pub fn blast_mainnet() -> Self {
+        let mut inner = ChainSpecBuilder::default()
+            .chain(BLAST_MAINNET.chain)
+            .genesis(BLAST_MAINNET.genesis.clone());
+        let forks = BLAST_MAINNET.hardforks.clone();
         inner = inner.with_forks(forks);
 
         Self { inner }
@@ -708,6 +721,15 @@ mod tests {
     #[test]
     fn latest_base_mainnet_fork_id_with_builder() {
         let base_mainnet = OpChainSpecBuilder::base_mainnet().build();
+        assert_eq!(
+            ForkId { hash: ForkHash([0xbc, 0x38, 0xf9, 0xca]), next: 0 },
+            base_mainnet.latest_fork_id()
+        )
+    }
+
+    #[test]
+    fn latest_blast_mainnet_fork_id_with_builder() {
+        let base_mainnet = OpChainSpecBuilder::blast_mainnet().build();
         assert_eq!(
             ForkId { hash: ForkHash([0xbc, 0x38, 0xf9, 0xca]), next: 0 },
             base_mainnet.latest_fork_id()

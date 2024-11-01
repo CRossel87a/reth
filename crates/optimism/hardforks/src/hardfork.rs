@@ -321,6 +321,37 @@ impl OptimismHardfork {
             (Self::Granite.boxed(), ForkCondition::Timestamp(1726070401)),
         ])
     }
+
+    /// Blast mainnet list of hardforks.
+    pub fn blast_mainnet() -> ChainHardforks {
+            ChainHardforks::new(vec![
+                (EthereumHardfork::Frontier.boxed(), ForkCondition::Block(0)),
+                (EthereumHardfork::Homestead.boxed(), ForkCondition::Block(0)), // OK
+                (EthereumHardfork::Tangerine.boxed(), ForkCondition::Block(0)), // OK
+                (EthereumHardfork::SpuriousDragon.boxed(), ForkCondition::Block(0)), // OK
+                (EthereumHardfork::Byzantium.boxed(), ForkCondition::Block(0)), // OK
+                (EthereumHardfork::Constantinople.boxed(), ForkCondition::Block(0)), // OK
+                (EthereumHardfork::Petersburg.boxed(), ForkCondition::Block(0)), // OK
+                (EthereumHardfork::Istanbul.boxed(), ForkCondition::Block(0)), // OK
+                (EthereumHardfork::MuirGlacier.boxed(), ForkCondition::Block(0)), // OK
+                (EthereumHardfork::Berlin.boxed(), ForkCondition::Block(0)), // OK
+                (EthereumHardfork::London.boxed(), ForkCondition::Block(0)), // OK
+                (EthereumHardfork::ArrowGlacier.boxed(), ForkCondition::Block(0)), // OK
+                (EthereumHardfork::GrayGlacier.boxed(), ForkCondition::Block(0)), // OK
+                (
+                    EthereumHardfork::Paris.boxed(), // OK
+                    ForkCondition::TTD { fork_block: Some(0), total_difficulty: U256::ZERO }, // OK
+                ),
+                //(Self::Bedrock.boxed(), ForkCondition::Block(0)), 
+                (Self::Regolith.boxed(), ForkCondition::Timestamp(0)), // OK
+                (EthereumHardfork::Shanghai.boxed(), ForkCondition::Timestamp(0)), // OK
+                (Self::Canyon.boxed(), ForkCondition::Timestamp(0)), // OK
+                (EthereumHardfork::Cancun.boxed(), ForkCondition::Timestamp(1716843599)), // OK
+                (Self::Ecotone.boxed(), ForkCondition::Timestamp(1716843599)), // OK
+                //(Self::Fjord.boxed(), ForkCondition::Timestamp(1720627201)),
+                //(Self::Granite.boxed(), ForkCondition::Timestamp(1726070401)),
+            ])
+        }
 }
 
 /// Match helper method since it's not possible to match on `dyn Hardfork`
