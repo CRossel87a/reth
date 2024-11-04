@@ -37,7 +37,7 @@ pub use info::ChainInfo;
 pub use spec::test_fork_ids;
 pub use spec::{
     BaseFeeParams, BaseFeeParamsKind, ChainSpec, ChainSpecBuilder, ChainSpecProvider,
-    DepositContract, ForkBaseFeeParams, DEV, HOLESKY, MAINNET, SEPOLIA,
+    DepositContract, ForkBaseFeeParams, DEV, HOLESKY, MAINNET, SEPOLIA,BLAST_CHAINSPEC_TEST
 };
 
 /// Simple utility to create a thread-safe sync cell with a value set.

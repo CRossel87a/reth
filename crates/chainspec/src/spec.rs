@@ -54,6 +54,27 @@ pub static MAINNET: LazyLock<Arc<ChainSpec>> = LazyLock::new(|| {
     spec.into()
 });
 
+/// The Blast spec
+pub static BLAST_CHAINSPEC_TEST: LazyLock<Arc<ChainSpec>> = LazyLock::new(|| {
+    let mut spec = ChainSpec {
+        chain: Chain::from_named(NamedChain::Blast),
+        genesis: serde_json::from_str(include_str!("../res/genesis/blast.json"))
+            .expect("Can't deserialize Blast genesis json"),
+        genesis_hash: once_cell_set(b256!("b689b35ef29d0bec5816938e0e52683c7257d2e325420ea69b739a2be4754b89")),
+        genesis_header: Default::default(),
+        // <https://etherscan.io/block/15537394>
+        paris_block_and_final_difficulty: None,
+        hardforks: EthereumHardfork::mainnet().into(),
+        // https://etherscan.io/tx/0xe75fb554e433e03763a1560646ee22dcb74e5274b34c5ad644e7c0f619a7e1d0
+        deposit_contract: None,
+        base_fee_params: BaseFeeParamsKind::Constant(BaseFeeParams::ethereum()),
+        max_gas_limit: ETHEREUM_BLOCK_GAS_LIMIT,
+        prune_delete_limit: 20000,
+    };
+    spec.genesis.config.dao_fork_support = true;
+    spec.into()
+});
+
 /// The Sepolia spec
 pub static SEPOLIA: LazyLock<Arc<ChainSpec>> = LazyLock::new(|| {
     let mut spec = ChainSpec {

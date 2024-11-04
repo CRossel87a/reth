@@ -8114,6 +8114,7 @@ dependencies = [
  "alloy-eips",
  "alloy-genesis",
  "alloy-primitives",
+ "alloy-serde",
  "derive_more 1.0.0",
  "once_cell",
  "op-alloy-rpc-types",
@@ -8122,6 +8123,7 @@ dependencies = [
  "reth-network-peers",
  "reth-optimism-forks",
  "reth-primitives-traits",
+ "serde",
  "serde_json",
 ]
 

@@ -1,9 +1,9 @@
 #![allow(missing_docs)]
 
 use alloy_consensus::EMPTY_ROOT_HASH;
-use alloy_primitives::{keccak256, Address, Bytes, B256, U256};
+use alloy_primitives::{b256, keccak256, Address, Bytes, B256, U256};
 use alloy_rlp::EMPTY_STRING_CODE;
-use reth_chainspec::{Chain, ChainSpec, HOLESKY, MAINNET};
+use reth_chainspec::{Chain, ChainSpec, HOLESKY, MAINNET, BLAST_CHAINSPEC_TEST};
 use reth_optimism_chainspec::BLAST_MAINNET;
 use reth_primitives::Account;
 use reth_provider::test_utils::{create_test_provider_factory, insert_genesis};
@@ -36,16 +36,43 @@ static TEST_SPEC: LazyLock<Arc<ChainSpec>> = LazyLock::new(|| {
     .into()
 });
 
+static BLAST_TEST_SPEC: LazyLock<Arc<ChainSpec>> = LazyLock::new(|| {
+    ChainSpec {
+        chain: Chain::from_id(12345),
+        genesis: serde_json::from_str(include_str!("../../trie/testdata/blast.json"))
+            .expect("Can't deserialize test genesis json"),
+        ..Default::default()
+    }
+    .into()
+});
+
+static BASE_TEST_SPEC: LazyLock<Arc<ChainSpec>> = LazyLock::new(|| {
+    ChainSpec {
+        chain: Chain::from_id(8453),
+        genesis: serde_json::from_str(include_str!("../../trie/testdata/base.json"))
+            .expect("Can't deserialize test genesis json"),
+        ..Default::default()
+    }
+    .into()
+});
+
 fn convert_to_proof<'a>(path: impl IntoIterator<Item = &'a str>) -> Vec<Bytes> {
     path.into_iter().map(Bytes::from_str).collect::<Result<Vec<_>, _>>().unwrap()
 }
 
+use reth_provider::test_utils::create_test_provider_factory_with_chain_spec;
+
+// Works for Base, state root: 0xb2afcb88cd1d0ab228f0415d99b0fb90a18e8515daf5eb31f55b5c4697e18328
+
 #[test]
 fn testbuildspec_proofs() {
     // Create test database and insert genesis accounts.
-    let factory = create_test_provider_factory();
-    let root = insert_genesis(&factory, BLAST_MAINNET.clone()).unwrap();
+    let factory = create_test_provider_factory_with_chain_spec(BLAST_CHAINSPEC_TEST.clone());
+    let root = insert_genesis(&factory, BLAST_TEST_SPEC.clone()).unwrap();
     dbg!(root);
+
+    let expected = b256!("b47ebef1f65d4c8e9fb61ff915cde0e875f9384d54fb5ea75ec907600156f183");
+    //assert_eq!(expected, root);
 }
 
 #[test]

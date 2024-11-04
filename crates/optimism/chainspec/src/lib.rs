@@ -683,6 +683,14 @@ mod tests {
     }
 
     #[test]
+    fn blast_mainnet_genesis() {
+        let genesis = BLAST_MAINNET.genesis_header();
+        dbg!(genesis);
+        let block_hash = genesis.hash_slow();
+        dbg!(block_hash);
+    }
+
+    #[test]
     fn base_sepolia_genesis() {
         let genesis = BASE_SEPOLIA.genesis_header();
         assert_eq!(

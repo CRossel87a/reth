@@ -27,12 +27,16 @@ alloy-genesis.workspace = true
 alloy-primitives.workspace = true
 alloy-consensus.workspace = true
 alloy-eips.workspace = true
+alloy-serde.workspace = true
 
 # op
 op-alloy-rpc-types.workspace = true
 
 # io
 serde_json.workspace = true
+
+
+serde = { version = "1.0", default-features = false }
 
 # misc
 derive_more.workspace = true
